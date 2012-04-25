@@ -114,10 +114,21 @@ while ~feof(fid)
 
                         % when found, start looking for next data misalignment
                         if numel(idx2) > 1
+
                             % mark location of last and next packet header
                             dstloc = idx;
                             srcloc = ftell(fid) - numel(res) + idx2(2) - 1;
                             fprintf('Found valid data at 0x%x\n',srcloc)
+                            
+                            % look for valid CRC checksums, otherwise keep looking
+%                             for n = 2:numel(idx2);
+%                                 if ~check_SRZ_CRC32(fname1,srcloc+252)
+%                                     continue
+%                                 else
+%                                     srcloc = srcloc + idx2(n);  % need to prevent overflow
+%                                     break
+%                                 end
+%                             end
                             
                             % start looking recursively at this offset (fix data backwards to avoid redundant writes)
                             fprintf('*******************\n');
