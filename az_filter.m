@@ -1,21 +1,63 @@
 function res = az_filter(ts, src, a, varargin)
 % AZ_FILTER  Realign multi-channel time series given the range to each sensor
 %
+% TS2 = az_filter(TS, SRC, A) takes in time series structure, TS, source
+% location structure, SRC, and array structure, A, and returns a time
+% series structure, TS2, aligned and optionally filtered around harmonics
+% using FrFT-based instantaneous frequency estimation.
+
 
 % optional inputs
 DEBUG = true;  
-MODE = true;
+FILTMODE = true;
+REFMODE = 'fft';     % 'man'; %
+nPad = 128;     % number of samples to keep before/after detected signal
+nRef = 5;       % number of channels to use as reference
+c = calcSoundSpeed(22.5);
 if nargin > 2
-    MODE = varargin{1};
+    FILTMODE = varargin{1};
 end
 
 fprintf('\n\n***********************************************\n')
 
-DEBUG = true;
 
-nPad = 128;     % number of samples to keep before/after detected signal
+%% find best reference channel (or average IF of several channels together)
+switch lower(REFMODE)
+    case 'fft'
+        % select the channel with the largest difference (yes, it's a crude SNR estimate)
+        fd = calc_spectrum(ts,size(ts.data,1),@rectwin,1);        % compute spectrum
+        freq = fd.freq;
+        mag = sgolayfilt(fd.mag,1,101);
+        clear fd;
 
-c = calcSoundSpeed(22);
+        % sum in-band energy between 30kHz and 80kHz
+        fl0 = find(freq > 30e3,1);
+        fh0 = find(freq < 80e3,1,'last');
+        E0 = sum(mag(fl0:fh0,:),1);
+
+        % sum out of band energy outside 25kHz and 85kHz
+        fl1 = find(freq < 25e3,1);
+        fh1 = find(freq < 85e3,1,'last');
+        N0 = sum(mag([1:fl1 fh1:end],:),1);
+
+        % find the strongest signals
+        [~,idx] = sort(E0./N0,'descend');
+        refidx = idx(1:nRef);
+        
+    case 'man'
+        % alternatively, we can manually select references
+        refch = 75;
+        refbd = 2;
+        refidx = az_chanindex(refch,refbd,a);
+        
+    otherwise
+        error('Unknown filtering mode')
+end
+
+R = ts.data(:,refidx);
+
+
+%% compute delay based on ToA from source to array
 
 % calculate time of arrival for each sensor
 toa = src.rng / c;
@@ -26,30 +68,27 @@ tdoa = toa-min(toa);
 % calculate sample delay to closest whole sample
 delta = round(tdoa .* ts.fs);
 
-% find a good reference channel (ideally this would be based on SNR)
-%fd = calc_spectrum(ts);        % use strongest signal in first harmonic band
-%Fidx = (find(fd.freq > 20e3,1) : find(fd.freq < 50e3),-1);
-%refch = max(sum(fd.magdb(:,Fidx),1))
-%refch = find(tdoa == min(tdoa));
-refch = 75;
-refbd = 2;
-refidx = az_chanindex(refch,refbd,a);
-    
 
-%% estimate start/stop time of strongest signal
-% filter out start band (40-60kHz)
-b0 = firls(80,[0 38e3 42e3 58e3 62e3 ts.fs/2]./(ts.fs/2),[0 0 1 1 0 0]);    %freqz(b0,1,4096,ts.fs)
-ref0 = filtfilt(b0,1,ts.data(:,refidx));
-ref0 = ref0.^2;     % use signal energy
-t0 = find(ref0 > 0.1*max(ref0),1,'first');
+%% use reference channels to find start/stop time of signal
+
+% filter out start/stop band (40-70kHz)
+b = firls(80,[0 38e3 42e3 68e3 72e3 ts.fs/2]./(ts.fs/2),[0 0 1 1 0 0]);    %freqz(b0,1,4096,ts.fs)
+Rhat = filtfilt(b,1,R);
+Rhat = Rhat.^2;     % use signal energy
+
+% find start/stop of each reference channel
+for n=1:numel(refidx)
+    t0(n) = find(Rhat(:,n) > 0.1*max(Rhat(:,n)),1,'first');
+    t1(n) = find(Rhat(:,n) > 0.1*max(Rhat(:,n)),1,'last');
+end
 t0 = t0-nPad;    % to remove STFT transients
-
-% % filter out stop band (20-35kHz)
-% b1 = firls(80,[0 18e3 22e3 33e3 37e3 ts.fs/2]./(ts.fs/2),[0 0 1 1 0 0]);    %freqz(b1,1,4096,ts.fs)
-% ref1 = filtfilt(b1,1,ts.data(:,refidx));
-% ref1 = ref1.^2;     % use signal energy
-t1 = find(ref0 > 0.1*max(ref0),1,'last');
 t1 = t1+nPad;    % to remove STFT transients
+
+% correct for TDOA and average start/stop markers
+t0 = floor(mean(t0 - delta(refidx)));
+t1 = floor(mean(t1 - delta(refidx)));
+
+%% realign and reduce data window
 
 % initialize resulting time series data
 nCh = size(ts.data,2);
@@ -58,22 +97,46 @@ nSamp = (t1-t0)+1;
 res.fs = ts.fs;
 res.data = zeros(nSamp,nCh);
 
-
+% remove extraneous samples before and after (with padding)
 % iterate over each channel and realign relative to propagation delay
 for ch = 1:nCh
     idx = (t0+delta(ch) : t1+delta(ch));
     res.data(:,ch) = ts.data(idx,ch) - mean(ts.data(idx,ch));
 end
 
+
 % option to skip filtering
-if ~MODE
+if ~FILTMODE
     return
 end
 
-% estimate IF of first harmonic using reference channel
-IF = mca_ifestimate(hilbert(res.data(:, refidx))) .* res.fs;
-%IF = mca_ifestimate(hilbert(res.data(nPad+1:end-nPad, refch)));%,res.fs);
-%IF = [ones(nPad,1)*IF(1); IF; ones(nPad,1)*IF(end)];        % extend limits to padded buffers
+
+%% estimate IA and IF curve for reference channel(s)
+H = hilbert(res.data);
+for n = 1:numel(refidx)
+    % estimate first component
+    [IF1(:,n),p1(:,n)] = mca_ifestimate(H(:,n),1,.3,.3,.4);
+    H1(:,n) = mca_iffilt(H(:,n),IF1(:,n));
+    
+    % estimate second component
+    [IF2(:,n),p2(:,n)] = mca_ifestimate(H(:,n)-H1(:,n),1,.3,.3,.4);
+    H2(:,n) = mca_iffilt(H(:,n),IF2(:,n));
+    
+end
+
+% back out to expected starting time and take the average polynomial curve
+
+
+% average IF polynomials
+%IF{n} = IF{n} .* ts.fs;     % need to fix bug in mca_ifestimate when fs > 1
+
+
+
+
+%% filter around IF estimate and separate harmonics on all channels
+
+
+
 
 %debug
 if DEBUG
@@ -91,7 +154,8 @@ if DEBUG
     drawnow
 end
 
-% iterate over each channel
+
+% iterate over each channel to perform harmonic separation
 fprintf('Filtering harmonic components\n');
 for ch = 1:nCh
 

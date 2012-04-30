@@ -4,8 +4,8 @@ function ts = az_convert(fname1,fname2,call,array)
 fprintf('\n\n***********************************************\n')
 
 % find sample numbers to retrieve on each board
-idx1 = (call.s0:call.s1);
-idx2 = idx1;
+idx1 = (call.s0(1):call.s1(1));
+idx2 = (call.s0(2):call.s1(2));
 
 % index data channels in sequential order for each board
 ch1 = 1:112;
@@ -14,15 +14,27 @@ ch2 = 1:112;
 % read in both data sets
 fprintf('Reading call data from side 1...  \n')
 [res1, hdr1] = read_SRZ(fname1,idx1,ch1);
-assert(numel(res1)>0,'Side 1 returned no data!')
+N1 = size(res1,1);
+assert(N1>0,'Side 1 returned no data!')
 fprintf('  Done!\n\n')
 
 fprintf('Reading call data from side 1...  \n')
-[res2] = read_SRZ(fname2,idx2,ch2);
-assert(numel(res2)>0,'Side 2 returned no data!')
+res2 = read_SRZ(fname2,idx2,ch2);
+N2 = size(res2,1);
+assert(N2>0,'Side 2 returned no data!')
 fprintf('  Done!\n\n')
 
+% check to ensure both sides have equal length, truncate if necessary
 fprintf('Rearranging data columns to match array definition\n')
+if (N1 ~= N2)
+    if N1 > N2
+        res1(N2+1:end,:) = [];
+    else
+        res2(N1+1:end,:) = [];
+    end
+    warning('AZ_CONVERT:trunc','Data lengths unequal - truncating %d samples',abs(N1-N2))
+end
+
 res = [res1 res2];                  % combine data from each board
 ts.data = zeros(size(res,1), length(array.ch));         % init data struct
 chNum = array.ch + 112*(array.bd-1); % get shuffle order

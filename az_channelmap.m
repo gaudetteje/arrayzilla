@@ -1,6 +1,13 @@
 function a = az_channelmap(a,varargin)
 % AZ_CHANNELMAP  maps array coordinates to data channels in digital
 % recorder files
+%
+% A = az_channelmap(A) takes in a struct, A, containing coordinate fields
+% 'xPos' and 'yPos' generated from az_positions and appends 'bd', 'ch',
+% 'badCh1', and 'badCh2' to the struct.
+%
+% Note:  Channel and board numbers are hard coded values and must be
+% updated manually if array configuration is ever changed.
 
 % optional parameters
 PLOTFLAG = false;

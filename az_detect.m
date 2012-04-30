@@ -21,14 +21,13 @@ hdr(1) = read_header(fname1);
 fprintf('\nReading header information from side 2...  \n\n')
 hdr(2) = read_header(fname2);
 
-
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % verify/correct data set alignment, if sync data is available
 if isfield(hdr,'sync')
     fprintf('\nSynchronizing data sequences...  \n')
     
     %  map synchronous trigger events to event index in both files
-    [calls,idx1,idx2] = intersect(hdr(1).sync, hdr(2).sync);
+    [calls,idx(1,:),idx(2,:)] = intersect(hdr(1).sync, hdr(2).sync);
     N = numel(calls);
     M = numel(union(hdr(1).syn, hdr(2).sync));
     fprintf('  Found %d of %d synchronous trigger events.\n', N, M);
@@ -37,36 +36,30 @@ else
     % otherwise, just use first valid block for now and manually align data segments :(
     fprintf('\nNo synchronization data was found on auxiliary channels!  Assuming perfect alignment exists (check this manually).\n')
     
-    % append last event number
-    hdr(1).blockevent(end+1) = numel(hdr(1).event)+1;
-    hdr(2).blockevent(end+1) = numel(hdr(2).event)+1;
-    
     % take smallest of 2 first blocks
     N = min([hdr(1).blockevent(2) hdr(2).blockevent(2)])-1;
     
     % assign fake call list and indices
     calls = 1:N;
-    idx1 = 1:N;
-    idx2 = 1:N;
+    idx(1,:) = 1:N;
+    idx(2,:) = 1:N;
 end
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% assign callmap to 2xN struct for matching call data
-events(N).s0 = 0;    % preallocate mem
-events(N).s1 = 0;
-events(N).t0 = 0;
-events(N).t1 = 0;
-for k = 1:N-1
-    events(k).s0 = hdr(1).event(k)+1;
-    events(k).s1 = hdr(1).event(k+1);
-    events(k).t0 = hdr(1).time(events(k).s0);
-    events(k).t1 = hdr(1).time(events(k).s1);
+% assign event samples and times to struct
+events(1:N) = struct('s0',[0 0],'s1',[0 0],'t0',[0 0],'t1',[0 0]);
+for k=1:N
+    events(k).s0(1) = hdr(1).event(idx(1,k));
+    events(k).s1(1) = hdr(1).event(idx(1,k)+1)-1;
+    events(k).s0(2) = hdr(2).event(idx(2,k));
+    events(k).s1(2) = hdr(2).event(idx(2,k)+1)-1;
+
+    events(k).t0(1) = hdr(1).time(events(k).s0(1));
+    events(k).t1(1) = hdr(1).time(events(k).s1(1));
+    events(k).t0(2) = hdr(2).time(events(k).s0(2));
+    events(k).t1(2) = hdr(2).time(events(k).s1(2));
 end
-events(N).s0 = hdr(1).event(N);
-events(N).s1 = numel(hdr(1).count);
-events(N).t0 = hdr(1).time(events(N).s0);
-events(N).t1 = hdr(1).time(events(N).s1);
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -80,7 +73,7 @@ function hdr = read_header(fname)
     hdr.clock = res(:,2);   % Mx1 uint32
     hdr.gain = res(:,3);    % 1x1 uint8
     hdr.fs = res(:,4);      % 1x1 double
-%    hdr.trig = res(:,5);    % Mx1 double
+    hdr.trig = res(:,5);    % Mx1 double
     
     % unwrap clock cycles if overflow occurred
     k = find(diff(hdr.clock) < 1); k = [k; length(hdr.clock)];
@@ -107,7 +100,7 @@ function hdr = read_header(fname)
         assert(~isempty(res), 'Start of data block not aligned with any data segment!');      % THIS SHOULD NEVER HAPPEN
         hdr.blockevent(i) = res;
     end
-%    idx(end) = numel(hdr.event)+1;  % append last segment index
+    hdr.blockevent(end+1,1) = numel(hdr.event)+1;  % append last segment index
 
     % extract digital data from auxiliary channel, if possible
 %     hdr.trig = hdr.trig - 2.5;                 % subtract DC offset

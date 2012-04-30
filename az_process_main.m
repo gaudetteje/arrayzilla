@@ -1,8 +1,8 @@
 function varargout = az_process_main(varargin)
 % AZ_PROCESS_MAIN  the main calling function for analyzing Arrayzilla data
 %
-% callmap = az_process_main(fname1,fname2) detects all calls in the files
-%       and saves call map to a MAT file in the current directory
+% az_process_main(fname1,fname2) detects all calls in the files and saves
+%     call map to a MAT file in the current directory
 % az_process_main(fname1,fname2,CALLS) only plots the calls in the
 %     specified array
 %
@@ -10,16 +10,17 @@ function varargout = az_process_main(varargin)
 close all
 
 if ~exist('TDOA_frame','file')
-    addpath('~/src/simmons_svn/flightroom_tools/primary_analysis/');
+    cLoc = fileparts(mfilename('fullpath'));
+    addpath(fullfile(cLoc,'primary_analysis'));
 end
 
 % plotting flags
-PLOT0 = 0;          % plot array channel positions
-PLOT1 = 1;          % time series of detected calls
-PLOT2 = 1;          % spectrogram for each raw call
+PLOT0 = 0;          % time series of detected calls
+PLOT1 = 0;          % plot array channel positions
+PLOT2 = 0;          % spectrogram for each raw call
 PLOT3 = 0;          % 3D representation of array and source location
-PLOT4 = 0;          % spectrogram for each filtered call
-PLOT5 = 0;          % 3D beam surface/contour plot for each call
+PLOT4 = 1;          % spectrogram for each filtered call
+PLOT5 = 1;          % 3D beam surface/contour plot for each call
 
 % force (re)detection of calls
 FORCEDET = false;
@@ -103,14 +104,6 @@ end
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%% Define physical array parameters
-array = az_positions([19 12],[4 5]*.0254,[9/8 9/10]);
-
-% assign channel/board mapping to array struct
-array = az_channelmap(array,PLOT0);
-
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Detect calls in data files and return timestamps
 prefix = regexp(fname1,'[_\-\ ]');      % use current filename
 callfile = [fname1(1:prefix(end)) 'callmap.mat'];
@@ -123,40 +116,49 @@ else
     save(callfile,'callmap');
 end
 
-
 % get call index
 if CALLNUM == Inf
     callIdx = 1:length(callmap);    % assign callmap index
 else
     callIdx = CALLNUM;              % otherwise use default
+    if isempty(callIdx)
+        return              % terminate if no calls to process
+    end
 end
 
 % plot time series data on several channels
-if PLOT1; plotTimeSeries(fname1, fname2, callmap, callIdx); pause; end
+if PLOT0; plotTimeSeries(fname1, fname2, callmap(callIdx)); pause; end
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% Define physical array parameters
+array = az_positions([19 12],[4 5]*.0254,[9/8 9/10]);
+
+% assign channel/board mapping to array struct
+array = az_channelmap(array,PLOT1);
+
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% iterate over each call
 
 % preallocate structs
-if ~isempty(callIdx)
-    warning('OFF','CALC_SPECTRUM:fs');
-    warning('OFF','CALC_SPECTRUM:dc');
-    N = length(callIdx);
-    source(N).xSrc = [];
-    source(N).ySrc = [];
-    source(N).zSrc = [];
-    source(N).residual = [];
-    source(N).az = [];
-    source(N).el = [];
-    source(N).rng = [];
-    fd(N) = calc_spectrum(1);
-    beam(N).f = [];
-    beam(N).x = [];
-    beam(N).y = [];
-    beam(N).X = [];
-    beam(N).Y = [];
-    beam(N).Z = [];
-end
+warning('OFF','CALC_SPECTRUM:fs');
+warning('OFF','CALC_SPECTRUM:dc');
+N = length(callIdx);
+source(N).xSrc = [];
+source(N).ySrc = [];
+source(N).zSrc = [];
+source(N).residual = [];
+source(N).az = [];
+source(N).el = [];
+source(N).rng = [];
+fd(N) = calc_spectrum(1);
+beam(N).f = [];
+beam(N).x = [];
+beam(N).y = [];
+beam(N).X = [];
+beam(N).Y = [];
+beam(N).Z = [];
 
 
 for k = 1:length(callIdx)
@@ -205,26 +207,24 @@ end
 
 
 % save data
-if ~isempty(callIdx)
-    beamfile = [fname1(1:prefix(end)) 'beams.mat'];
-    
-    % append data, if already exists
-    if exist(beamfile,'file')
-        resp = input('Overwrite existing file? [y/N]  ','s');
-        if ~strcmpi(resp,'y')
-            k = 1;
-            beamfile = sprintf('%s_%.2d.mat',beamfile(1:end-4),k);
-            while exist(beamfile,'file')
-                k = k+1;
-                beamfile = sprintf('%s_%.2d.mat',beamfile(1:end-7),k);
-            end
+beamfile = [fname1(1:prefix(end)) 'beams.mat'];
+
+% append data, if already exists
+if exist(beamfile,'file')
+    resp = input('Overwrite existing file? [y/N]  ','s');
+    if ~strcmpi(resp,'y')
+        k = 1;
+        beamfile = sprintf('%s_%.2d.mat',beamfile(1:end-4),k);
+        while exist(beamfile,'file')
+            k = k+1;
+            beamfile = sprintf('%s_%.2d.mat',beamfile(1:end-7),k);
         end
     end
-    
-    % save to beamfile
-    save(beamfile,'beam','callIdx','source');
-    fprintf('Saving beam data to %s\n',beamfile);
 end
+
+% save to beamfile
+save(beamfile,'beam','callIdx','source');
+fprintf('Saving beam data to %s\n',beamfile);
 
 
 %% send appropriate output
