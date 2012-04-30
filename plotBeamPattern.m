@@ -26,11 +26,11 @@ end
 %% hard coded parameters
 
 % surface plotting
-cMap = 'hot';%'jet';    % colormap
+cMap = flipud(hot);     %jet;    % colormap
 dBrange = 35;           % colorscale depth
 dBnorm = true;          % normalize to peak?
-azView = 20;            % azimuth angle
-elView = 20;            % elevation angle
+azView = 8;%20;            % azimuth angle
+elView = 76;%20;            % elevation angle
 
 % contour plotting
 contourLev = -3;        % dB contour level for each frequency line [dB]

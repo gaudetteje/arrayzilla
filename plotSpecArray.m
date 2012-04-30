@@ -1,4 +1,7 @@
-function plotSpecArray(array,ts)
+function plotSpecArray(array,ts,varargin)
+% PLOTSPECARRAY  displays a group of spectrograms from signals across the
+% array face for debugging purposes and sanity checks
+
 % plots spectrogram of a 5x5 set of channels around the array
 chNum = [1 2 26 27 28 63 64 75 48 49 42 43 72 97 98 47 48 77 36 37 110 111 112 2 1];
 bdNum = [1 1  2  2  2  1  1  2  2  2  1  1  1  2  2  1  1  1  2  2   1   1   1 2 2];
@@ -10,7 +13,7 @@ nfft = 512;
 
 fh = nan(1,length(idx));
 for n=1:length(idx)
-    fh(n) = figure('MenuBar','none','ToolBar','none');
+    fh(n) = figure('MenuBar','none','ToolBar','none','color','w');
     if ~idx(n), continue, end
     
     % zero pad data vector
@@ -23,6 +26,7 @@ for n=1:length(idx)
     %set(gca,'YDir','normal')
     
     set(gca,'YLim',[0 (ts.fs*1e-3)/2])
+    set(gca,'XLim',[0 size(ts.data,1)/(ts.fs*1e-3)])
     % set(gca,'XLim',[nfft size(ts.data,1)+nfft]/(ts.fs*1e-3))
     set(gca,'CLim',[-80 -30]);
     colorbar
