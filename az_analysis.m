@@ -2,22 +2,19 @@ function fd = az_analysis(ts,varargin)
 % AZ_ANALYSIS  Computes frequency response of each channel
 
 % optional input parameters
-MODE = 'ft';
-if nargin > 1
-    MODE = varargin{1};
-end
+%MODE = 'ft';
+%if nargin > 1
+%    MODE = varargin{1};
+%end
 
 fprintf('\n\n*****************************************\n')
 
-% realign data samples given source position and time of arrival
-%TBD
-
 % estimate magnitude/phase per frequency bin
 fprintf('Analyzing spectral content of received data\n')
-switch lower(MODE)
+%switch lower(MODE)
     
     %%% mode 1 - use FT of each call
-    case 'ft'
+    %case 'ft'
         
         % zero pad data
         ts.data = [zeros(250,size(ts.data,2)); ts.data; zeros(250,size(ts.data,2))];
@@ -25,23 +22,34 @@ switch lower(MODE)
         nfft = 2*floor(size(ts.data,1)/2);       % ensure even to avoid warning msg in calc_spectrum
         
         fd = calc_spectrum(ts,nfft,@blackmanharris,1,0.5,'half','ac','Vrms');
-
+    
     %%% mode 2 - Hilbert analysis of each call
-    case 'ht'
-        % estimate the intstantaneous phase law for the call
-        %IF = ;
+    %case 'ht'
+    
+    if isfield(ts,'fm1')
+        % initialize matrices
+        IA1 = zeros(size(ts.fm1));
+        IA2 = zeros(size(ts.fm1));
+        IF1 = zeros(size(ts.fm1));
+        IF2 = zeros(size(ts.fm1));
         
-        % remove echoes and reverb using pre-warping filter
-        ts2 = mca_iffilt(ts.data,IF,ts.fs); %%% if this doesn't work on multiple signals then modify mca_iffilt to do so!
-        
-        % estimate parameters of remaining components
-        [IMF, IA, IF] = mca_extract(ts2, ts.fs);
+        % estimate the instantaneous phase law for harmonics in each call
+        for n=1:size(ts.fm1,2)
+            [~,IA1(:,n),IF1(:,n)] = mca_extract(ts.fm1(:,n), ts.fs, 0);
+            [~,IA2(:,n),IF2(:,n)] = mca_extract(ts.fm2(:,n), ts.fs, 0);
+        end
         
         % assign to frequency domain structure
-        fd.freq = IF;
-        fd.mag = IA(IF > .3*max(IF));
-        fd.magdb = 20*log10(fd.mag);
-    otherwise
-        error('Unknown analysis mode used')
+        fd.if1 = IF1;
+        fd.ia1 = IA1;
+        %fd.ia1db = db(fd(1).mag);
         
-end
+        fd.if2 = IF2;
+        fd.ia2 = IA2;
+        %fd.magdb = db(fd(2).mag);
+    end
+    
+%    otherwise
+%        error('Unknown analysis mode used')
+    
+%end

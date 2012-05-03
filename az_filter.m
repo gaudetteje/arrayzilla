@@ -37,7 +37,7 @@ fprintf('\n\n***********************************************\n')
 %% find best reference channel(s) in data set
 switch lower(REFMODE)
     case 'fft'
-        % select the channel with the largest difference (yes, it's a crude SNR estimate)
+        % select the channel with the largest SNR difference
         fd = calc_spectrum(ts,size(ts.data,1),@rectwin,1);        % compute spectrum
         freq = fd.freq;
         mag = sgolayfilt(fd.mag,1,101);
@@ -53,7 +53,7 @@ switch lower(REFMODE)
         fh1 = find(freq < 85e3,1,'last');
         N0 = sum(mag([1:fl1 fh1:end],:),1);
 
-        % find the strongest signals
+        % find the strongest signals (yes, it's crude but it works!)
         [~,idx] = sort(E0./N0,'descend');
         refidx = idx(1:nRef);
         
@@ -177,6 +177,7 @@ FM2 = mean(FM2,2);
 
 % iterate over each channel to perform harmonic separation
 fprintf('Filtering harmonic components\n');
+%res.data = [];
 res.fm1 = zeros(size(res.data));
 res.fm2 = zeros(size(res.data));
 for n = 1:nCh

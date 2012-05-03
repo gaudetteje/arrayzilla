@@ -15,7 +15,7 @@ figure
 hold on;
 
 % iterate over each call
-for k = 1:N 
+for k = 1:N
     c = callmap(k);
     
     % sample index

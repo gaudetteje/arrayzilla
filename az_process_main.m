@@ -15,10 +15,10 @@ if ~exist('TDOA_frame','file')
 end
 
 % plotting flags
-PLOT0 = 0;          % time series of detected calls
-PLOT1 = 0;          % plot array channel positions
+PLOT0 = 1;          % time series of detected calls
+PLOT1 = 1;          % plot array channel positions
 PLOT2 = 1;          % spectrogram for each raw call
-PLOT3 = 0;          % 3D representation of array and source location
+PLOT3 = 1;          % 3D representation of array and source location
 PLOT4 = 1;          % spectrogram for each filtered call
 PLOT5 = 1;          % 3D beam surface/contour plot for each call
 
@@ -27,10 +27,6 @@ FORCEDET = false;
 
 % filter mode
 FILTMODE = true;
-
-% processing mode (Fourier Transform or Hilbert Transform)
-PROCMODE = 'ft';
-%PROCMODE = 'ht';
 
 % plot type to use
 PLOTMODE = 'surf';
@@ -127,7 +123,7 @@ else
 end
 
 % plot time series data on several channels
-if PLOT0; plotTimeSeries(fname1, fname2, callmap(callIdx)); pause; end
+if PLOT0; plotTimeSeries(fname1, fname2, callmap(callIdx)); end
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -152,13 +148,15 @@ source(N).residual = [];
 source(N).az = [];
 source(N).el = [];
 source(N).rng = [];
-fd(N) = calc_spectrum(1);
-beam(N).f = [];
-beam(N).x = [];
-beam(N).y = [];
-beam(N).X = [];
-beam(N).Y = [];
-beam(N).Z = [];
+fd = cell(N,1);
+beam = cell(N,1);
+% fd = {calc_spectrum(1)};
+% beam(N).f = [];
+% beam(N).x = [];
+% beam(N).y = [];
+% beam(N).X = [];
+% beam(N).Y = [];
+% beam(N).Z = [];
 
 
 for k = 1:length(callIdx)
@@ -178,18 +176,18 @@ for k = 1:length(callIdx)
     
     %% Realign data, separate harmonic components, and filter to remove echoes and reverb
     ts = az_filter(ts, source(k), array, FILTMODE);
-
+    
     if PLOT4; plotSpecArray(array,ts); end
     
     %% Correct data for transmission losses on each channel
     %ts = az_armaloss(ts, source{k}.rng);
     
     %% Analyze frequency-content of each channel
-    fd(k) = az_analysis(ts, PROCMODE);  %array, source{k}
+    fd{k} = az_analysis(ts);
     
     %% Interpolate beam data
-    beam(k) = az_calcbeam(fd(k), array, source(k));%, 'pos', 'nearest');
-    if PLOT5; plotBeamPattern(beam(k),PLOTMODE); pause; end
+    beam{k} = az_calcbeam(fd{k}, array, source(k));%, 'pos', 'nearest');
+    if PLOT5; plotBeamPattern(beam{k},PLOTMODE); pause; end
     
     fprintf('\n\n*** Completed processing call %d ***\n\n',cNum)
     
@@ -198,7 +196,7 @@ for k = 1:length(callIdx)
         fprintf('ERROR: \n')
         ERR = lasterror;
         disp(ERR.message)
-
+        
         fprintf('\n#######################################\n');
         fprintf('#####  Failed to process call %d  #####\n',cNum);
         fprintf('#######################################\n\n');
