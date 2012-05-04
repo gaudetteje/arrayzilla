@@ -53,13 +53,14 @@ if DEBUG
 
 else
 %%%%%%%%%%%%%%%%%%%%%%%%%%%
-    coords = TDOA_frame(ts.data(:,idx)', micpos', ts.fs);
+    %coords = TDOA_frame(ts.data(:,idx)', micpos', ts.fs);
+    coords = [0.93 0.78 1 0];
+    warning('Hard coding position due to inconsistent results')
 end
 
-xSrc = 0.93; %coords(1);
-ySrc = 0.78; %coords(2);
-zSrc = 1; %coords(3);
-warning('Hard coding position due to inconsistent results') %warning('FORCING Z=1m')
+xSrc = coords(1);
+ySrc = coords(2);
+zSrc = coords(3);
 
 fprintf('\nEstimated source location is (%g, %g, %g) [m]\n',xSrc,ySrc,zSrc)
 

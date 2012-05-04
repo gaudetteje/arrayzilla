@@ -161,6 +161,8 @@ for n = 1:numel(refidx)
         plot3((1:length(FM2))./res.fs, FM2.*res.fs, clim(2)*ones(length(FM2)), 'm', 'linewidth',2)
         plot3((1:length(FM2))./res.fs, (FM2+BW).*res.fs, clim(2)*ones(length(FM2)), '--m', 'linewidth',1)
         plot3((1:length(FM2))./res.fs, (FM2-BW).*res.fs, clim(2)*ones(length(FM2)), '--m', 'linewidth',1)
+        
+        title(sprintf('Idx = %d, Bd = %d, Ch = %d', refidx(n), a.bd(refidx(n)), a.ch(refidx(n))))
     end
 end
 
@@ -173,7 +175,7 @@ FM2 = mean(FM2,2);
 %% filter around IF estimate and separate harmonics on all channels
 
 % design flat cheby II filter
-[b,a] = cheby2(8,40,.1);
+[b,a] = cheby2(8,40,.125);
 
 % iterate over each channel to perform harmonic separation
 fprintf('Filtering harmonic components\n');

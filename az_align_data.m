@@ -72,6 +72,7 @@ tic
 code = uint32(hex2dec('6d726f46')); % compare "Form" with uint32 result (force into little endian)
 blockNum = 0;   % init
 fprintf('Processing %u blocks of size %d KB\n',ceil(nPackets/blockSize),blockSize*256/1024)
+%fprintf('  0');
 while ~feof(fid)
     
     res = fread(fid,blockSize,'*uint32',252);  % read "Form" every 256 bytes
@@ -202,6 +203,7 @@ while ~feof(fid)
     
     blockNum = blockNum+1;      % increment block count
     fprintf('.');
+    %fprintf('%s%3.d',char([8 8 8]),blockNum);
     if ~rem(blockNum,80), fprintf('\n'); end    % wrap text on command line
 end
 fprintf('\n')
