@@ -20,7 +20,7 @@ function res = az_filter(ts, src, a, varargin)
 % - separate harmonics on all channels
 
 % optional inputs
-DEBUG = true;
+DEBUG = false;
 FILTMODE = true;
 REFMODE = 'fft';     % 'man'; %
 nPad = 128;     % number of samples to keep before/after detected signal
@@ -132,11 +132,11 @@ H = hilbert(res.data);
 % iterate over each reference channel
 for n = 1:numel(refidx)
     % estimate first component
-    IF1 = mca_ifestimate(H(:,refidx(n)),1,.3,.3,.2);
+    IF1 = mca_ifestimate(H(:,refidx(n)),1,.4,.4,.4);
     H1 = mca_iffilt(H(:,refidx(n)),IF1,1);
     
     % estimate second component
-    IF2 = mca_ifestimate(H(:,refidx(n))-H1,1,.3,.3,.2);
+    IF2 = mca_ifestimate(H(:,refidx(n))-H1,1,.4,.4,.4);
     
     % swap harmonics if necessary
     if sum(IF1) > sum(IF2)
@@ -162,7 +162,7 @@ for n = 1:numel(refidx)
         plot3((1:length(FM2))./res.fs, (FM2+BW).*res.fs, clim(2)*ones(length(FM2)), '--m', 'linewidth',1)
         plot3((1:length(FM2))./res.fs, (FM2-BW).*res.fs, clim(2)*ones(length(FM2)), '--m', 'linewidth',1)
         
-        title(sprintf('Idx = %d, Bd = %d, Ch = %d', refidx(n), a.bd(refidx(n)), a.ch(refidx(n))))
+        title(sprintf('Idx = %d, Bd = %d, Ch = %d, (x = %gm, y = %gm)', refidx(n), a.bd(refidx(n)), a.ch(refidx(n)), a.xPos(refidx(n)), a.yPos(refidx(n))))
     end
 end
 

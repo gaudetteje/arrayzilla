@@ -15,7 +15,7 @@ if ~exist('TDOA_frame','file')
 end
 
 % plotting flags
-PLOT0 = 1;          % time series of detected calls
+PLOT0 = 0;          % time series of detected calls
 PLOT1 = 0;          % plot array channel positions
 PLOT2 = 0;          % spectrogram for each raw call
 PLOT3 = 0;          % 3D representation of array and source location
@@ -180,7 +180,7 @@ for k = 1:length(callIdx)
     if PLOT4; plotSpecArray(array,ts); end
     
     %% Correct data for transmission losses on each channel
-    %ts = az_armaloss(ts, source(k).rng);
+    ts = az_armaloss(ts, source(k).rng);
     
     %% Analyze frequency-content of each channel
     fd{k} = az_analysis(ts);
@@ -221,7 +221,7 @@ if exist(beamfile,'file')
 end
 
 % save to beamfile
-save(beamfile,'beam','callIdx','source');
+save(beamfile,'beam','callIdx','source','array');
 fprintf('Saving beam data to %s\n',beamfile);
 
 
@@ -242,4 +242,10 @@ switch nargout
         varargout{2} = fd;
         varargout{3} = source;
         varargout{4} = array;
+    case 5
+        varargout{1} = beam;
+        varargout{2} = fd;
+        varargout{3} = source;
+        varargout{4} = array;
+        varargout{5} = ts;
 end
