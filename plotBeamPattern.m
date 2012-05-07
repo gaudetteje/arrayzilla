@@ -46,16 +46,17 @@ end
 
 
 %% hard coded parameters
-smMETH = 'box';%'box';
-smSIZE = 9;
-B.Z = smooth3(B.Z,smMETH,smSIZE);
+smMETH = 'box';
+smSIZE = 7;
+B.Z = smoothn(B.Z,1e-4);                % interpolate NaN values (especially at missing corners)
+B.Z = smooth3(B.Z,smMETH,smSIZE);       % smooth data in all 3 dimensions
 
 
-% volume plotting
+% volume plotting options
 
 
 
-% surface plotting
+% surface plotting options
 cMap = 'hot';%flipud(hot);     %jet;    % colormap
 dBrange = 35;           % colorscale depth
 dBnorm = true;          % normalize to peak?
@@ -67,19 +68,90 @@ contourLev = -3;        % dB contour level for each frequency line [dB]
 colors = {'k','b','g','m','c','r'};
 
 %% plot resulting beam patterns
-switch PLOTMODE(1:4)
+switch PLOTMODE
     
     % plot volumetric plot
     case 'vol'
         
-        %fh = ;
-    
+        % convert to volumetric data
+        %%% use TriScatteredInterp with 3D uniform meshgrid
+%         N = 10;    % number of intensity levels
+%         
+%         x = repmat(B.AZ,[1 1 N]);
+%         y = repmat(B.EL,[1 1 N]);
+%         z = zeros(numel(B.el), numel(B.az), N);
+%         for i = 1:numel(B.f)
+%             z(:,:,i) = B.f(i);
+%         end
+        
+        
+        % construct 3D patches for each surface
+        for i = 1:length(B.f)
+            fvc = surf2patch(B.AZ,B.EL,B.FFT(:,:,i),B.FFT(:,:,i));
+            p{i} = patch(fvc);
+            shading faceted;
+            set(p{i},'FaceColor','r')
+            
+            view(3)
+            drawnow
+            
+            
+        end
+        
+        % see http://www.mathworks.com/matlabcentral/newsreader/view_thread/169205
+        
+    case 'sph'
+        
+        % iterate over each frequency beam
+        for i = 35 %1:length(B.f)
+            
+            % convert (az,el,rho) data points to cartesian coordinates
+            z = -B.Z(:,:,i) .* cos(B.AZ*pi/180) .* cos(B.EL*pi/180);
+            x = B.Z(:,:,i) .* sin(B.AZ*pi/180) .* cos(B.EL*pi/180);
+            y = B.Z(:,:,i) .* sin(B.EL*pi/180);
+            
+            % find peak value
+            dBpeak = max(max(B.Z(:,:,i)));
+            fprintf('Peak @ %g kHz = %2.1f dB\n', B.f(i)*1e-3, dBpeak)
+            
+            % plot interpolated surface
+            fh(i) = figure;%('MenuBar','none','ToolBar','none','NumberTitle','off');
+            surf(x,y,z+dBpeak);
+%             view(azView,elView)
+            shading interp
+            lh = light;
+            lighting phong
+            %lightangle(45,45)
+            %axis equal
+            %set(gca,'ZLim',[dBpeak-55 dBpeak]);
+            
+            colormap(cMap);
+            if dBnorm
+                cRange = [-dBrange 0];
+            else
+                cRange = [dBpeak-dBrange dBpeak];
+            end
+            set(gca,'CLim',cRange);
+            colorbar
+            
+            title(sprintf('%g kHz', B.f(i)*1e-3),'fontsize',16)
+            xlabel('az (\circ)','fontsize',16)
+            ylabel('el (\circ)','fontsize',16)
+            zlabel('dB','fontsize',16)
+            
+            set(gca,'fontsize',16);
+            set(gcf,'color','w');
+            
+        end
+        
+        
+        
     % plot 3D surface plots for each frequency bin
     case 'surf'
         
         % iterate over each frequency beam
         fh = nan(1,length(B.f));
-        for i = 11:length(B.f)-25
+        for i = 35 %1:length(B.f)
             
             % find peak value
             dBpeak = max(max(B.Z(:,:,i)));

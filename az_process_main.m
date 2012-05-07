@@ -180,7 +180,7 @@ for k = 1:length(callIdx)
     if PLOT4; plotSpecArray(array,ts); end
     
     %% Correct data for transmission losses on each channel
-    ts = az_armaloss(ts, source(k).rng);
+%     ts = az_armaloss(ts, source(k).rng);
     
     %% Analyze frequency-content of each channel
     fd{k} = az_analysis(ts);

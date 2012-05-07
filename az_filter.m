@@ -108,8 +108,8 @@ t1 = min(ceil(mean(t1-delta(refidx)) + 3*std(t1-delta(refidx))) + nPad, size(R,1
 % initialize resulting time series data
 nCh = size(ts.data,2);
 nSamp = (t1-t0)+1;
-T = nSamp./ts.fs;       % calc pulse length
-fprintf('Call duration is %.3g ms\n', 1e3*(T-(2*nPad/ts.fs)))
+T = 1e3*(nSamp./ts.fs-(2*nPad/ts.fs));       % calc pulse length
+fprintf('Call duration is %.3g ms\n', T)
 
 % iterate over each channel and realign relative to receive delay (with padding)
 res.fs = ts.fs;

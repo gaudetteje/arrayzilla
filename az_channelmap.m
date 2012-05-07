@@ -56,8 +56,8 @@ badCh1 = [109 50 73 74 69];
 badCh2 = [];%2 8 9 13 35 40 102 79 108 82 112 36 37];
 
 % known bad on microphones?
-badCh1 = [badCh1 52]; %18 44 92 95];
-badCh2 = [badCh2 20 18 93 80 13 107 25 53 28];% 82 23 108 40 41 13 98]; % 88 93 37];%2 8 9 13 36 40 82 96 102];
+badCh1 = [badCh1 52 32]; %18 44 92 95];
+badCh2 = [badCh2 20 18 93 80 13 107 25 53 28 77];% 82 23 108 40 41 13 98]; % 88 93 37];%2 8 9 13 36 40 82 96 102];
 
 % locate matching channel numbers
 idx = [idx az_chanindex([badCh1 badCh2], [ones(size(badCh1)) 2*ones(size(badCh2))], a)];

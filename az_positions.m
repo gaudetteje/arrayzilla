@@ -57,6 +57,14 @@ switch nargin
         dy = varargin{2}(2);
         x0 = varargin{3}(1);
         y0 = varargin{3}(2);
+    case 4
+        Nx = varargin{1}(1);
+        Ny = varargin{1}(2);
+        dx = varargin{2}(1);
+        dy = varargin{2}(2);
+        x0 = varargin{3}(1);
+        y0 = varargin{3}(2);
+        PLOTFLAG = varargin{4};
 end
 
 
