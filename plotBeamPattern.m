@@ -19,16 +19,48 @@ function plotBeamPattern(B,varargin)
 fprintf('\n\n*****************************************\n')
 fprintf('Plotting beam pattern\n\n')
 
-% optional parameters
+%% set default parameters
+
+% data "massaging" parameters
+smMETH = 'box';     % kernel type for smooth3.m
+smSIZE = 1;         % kernel size for smooth3.m (set to 1 for disable)
+
+% volume plotting options
+%TBD
+
+% surface plotting options
+cMap = 'hot';%flipud(hot);     %jet;    % colormap
+dBrange = 35;           % colorscale depth
+dBnorm = true;          % normalize to peak?
+azView = 8;%20;            % azimuth angle
+elView = 76;%20;            % elevation angle
+
+% contour plotting options
+contourLev = -3;        % dB contour level for each frequency line [dB]
+colors = {'k','b','g','m','c','r'};
+
+
+%% optional parameters
+FREQ = [];
 PLOTMODE = 'surf'; %'cont'
 DATAMODE = 'fft'; %'hsa1'; %
+FH = nan;
 switch (nargin)
     case 1
     case 2
-        PLOTMODE = varargin{1};
+        FREQ = varargin{1};
     case 3
-        PLOTMODE = varargin{1};
-        DATAMODE = varargin{2};
+        FREQ = varargin{1};
+        PLOTMODE = varargin{2};
+    case 4
+        FREQ = varargin{1};
+        PLOTMODE = varargin{2};
+        DATAMODE = varargin{3};
+    case 5
+        FREQ = varargin{1};
+        PLOTMODE = varargin{2};
+        DATAMODE = varargin{3};
+        FH = varargin{4};
     otherwise
         error('Incorrect number of input arguments')
 end
@@ -44,28 +76,36 @@ else
     error('Unknown DATAMODE parameter.  Should be one of ''fft'', ''hsa1'', or ''hsa2''.')
 end
 
+% get indices of desired frequency points
+if isempty(FREQ)
+    fIdx = 1:numel(B.f);
+else
+    fIdx = zeros(1,numel(FREQ));
+    for i = 1:numel(FREQ)
+        res = find(B.f >= FREQ(i), 1, 'first');
+        if ~isempty(res)
+            fIdx(i) = res;
+        end
+    end
+    fIdx = unique(fIdx);    % remove dups
+    fIdx(fIdx == 0) = [];   % remove zeros
+end
 
-%% hard coded parameters
-smMETH = 'box';
-smSIZE = 7;
+% figure handle
+if ishandle(FH)
+    fh = FH;            % get users figure handle
+    %if numel(fh) ~= numel(fIdx)
+        %fh(end+1) = repmat(fh(end),1,numel(fIdx)-numel(fh));
+    %end
+else
+    fh = nan;%(1,numel(fIdx));    % create array of figure handles to use
+end
+
+
+%% smooth out data before plotting
 B.Z = smoothn(B.Z,1e-4);                % interpolate NaN values (especially at missing corners)
 B.Z = smooth3(B.Z,smMETH,smSIZE);       % smooth data in all 3 dimensions
 
-
-% volume plotting options
-
-
-
-% surface plotting options
-cMap = 'hot';%flipud(hot);     %jet;    % colormap
-dBrange = 35;           % colorscale depth
-dBnorm = true;          % normalize to peak?
-azView = 8;%20;            % azimuth angle
-elView = 76;%20;            % elevation angle
-
-% contour plotting
-contourLev = -3;        % dB contour level for each frequency line [dB]
-colors = {'k','b','g','m','c','r'};
 
 %% plot resulting beam patterns
 switch PLOTMODE
@@ -86,7 +126,12 @@ switch PLOTMODE
         
         
         % construct 3D patches for each surface
-        for i = 1:length(B.f)
+        for i = fIdx
+            if ishandle(fh)
+                figure(fh);
+            else
+                fh = figure;
+            end
             fvc = surf2patch(B.AZ,B.EL,B.FFT(:,:,i),B.FFT(:,:,i));
             p{i} = patch(fvc);
             shading faceted;
@@ -95,7 +140,6 @@ switch PLOTMODE
             view(3)
             drawnow
             
-            
         end
         
         % see http://www.mathworks.com/matlabcentral/newsreader/view_thread/169205
@@ -103,7 +147,7 @@ switch PLOTMODE
     case 'sph'
         
         % iterate over each frequency beam
-        for i = 35 %1:length(B.f)
+        for i = fIdx
             
             % convert (az,el,rho) data points to cartesian coordinates
             z = -B.Z(:,:,i) .* cos(B.AZ*pi/180) .* cos(B.EL*pi/180);
@@ -115,7 +159,11 @@ switch PLOTMODE
             fprintf('Peak @ %g kHz = %2.1f dB\n', B.f(i)*1e-3, dBpeak)
             
             % plot interpolated surface
-            fh(i) = figure;%('MenuBar','none','ToolBar','none','NumberTitle','off');
+            if ishandle(fh)
+                figure(fh);
+            else
+                fh = figure;
+            end
             surf(x,y,z+dBpeak);
 %             view(azView,elView)
             shading interp
@@ -145,20 +193,22 @@ switch PLOTMODE
         end
         
         
-        
     % plot 3D surface plots for each frequency bin
     case 'surf'
         
         % iterate over each frequency beam
-        fh = nan(1,length(B.f));
-        for i = 35 %1:length(B.f)
+        for i = fIdx
             
             % find peak value
             dBpeak = max(max(B.Z(:,:,i)));
             fprintf('Peak @ %g kHz = %2.1f dB\n', B.f(i)*1e-3, dBpeak)
             
             % plot interpolated surface
-            fh(i) = figure;%('MenuBar','none','ToolBar','none','NumberTitle','off');
+            if ishandle(fh)
+                figure(fh);
+            else
+                fh = figure;
+            end
             surfc(B.AZ, B.EL, B.Z(:,:,i)-dBpeak);
             view(azView,elView)
             shading interp
@@ -185,30 +235,35 @@ switch PLOTMODE
             set(gca,'fontsize',16);
             set(gcf,'color','w');
             
-            
-            pause(0.2)
         end
-        %tilefigs(fh,2,3)
         
     % plot contours over all frequencies
     case 'cont'
-        figure;
+        if ishandle(fh)
+            figure(fh);
+        else
+            fh = figure;
+        end
         hold on;
         dBlevels = contourLev * [1 1];
-        for i = 1:length(B.f)
+        for i = fIdx
             dBpeak = max(max(B.Z(:,:,i)));
             fprintf('Peak @ %g kHz = %2.1f dB\n', B.f(i)*1e-3, dBpeak)
             contour(B.AZ, B.EL, B.Z(:,:,i),dBpeak+dBlevels,colors{mod(i-1,length(colors))+1},'linewidth',2);
         end
         grid on;
-        legend(num2str(1e-3*B.f(:)))
+        legend(num2str(1e-3*B.f(fIdx)'))
         
     % plot horizontal slice
     case 'horz'
         k = 28; % select an elevation
-        
-        figure; hold on;
-        for i = 1:length(B.f)
+        if ishandle(fh)
+            figure(fh);
+        else
+            fh = figure;
+        end
+        hold on;
+        for i = fIdx
             % find peak value
             dBpeak = max(max(B.Z(:,:,i)));
             fprintf('Peak @ %g kHz = %2.1f dB\n', B.f(i)*1e-3, dBpeak)
@@ -221,7 +276,7 @@ switch PLOTMODE
         end
         grid on;
         
-        legend(num2str(1e-3*B.f(:)))
+        legend(num2str(1e-3*B.f(fIdx)'))
         xlabel('Azimuth (deg)')
         ylabel('Magnitude (dB)')
         title(sprintf('Horizontal Beam Pattern @ %.1f degrees',B.el(k)))
@@ -229,9 +284,13 @@ switch PLOTMODE
     % plot vertical slice
     case 'vert'
         k = 16; % select an azimuth
-        
-        figure; hold on;
-        for i = 1:length(B.f)
+        if ishandle(fh)
+            figure(fh);
+        else
+            fh = figure;
+        end
+        hold on;
+        for i = fIdx
             % find peak value
             dBpeak = max(max(B.Z(:,:,i)));
             fprintf('Peak @ %g kHz = %2.1f dB\n', B.f(i)*1e-3, dBpeak)
@@ -244,12 +303,10 @@ switch PLOTMODE
         end
         grid on;
         
-        legend(num2str(1e-3*B.f(:)))
+        legend(num2str(1e-3*B.f(fIdx)'))
         xlabel('Elevation (deg)')
         ylabel('Magnitude (dB)')
         title(sprintf('Horizontal Beam Pattern @ %.1f degrees',B.el(k)))
-        
-        
         
     otherwise
         error('Unknown PLOTMODE parameter.  Should be one of ''vol'', ''surf'', or ''cont''.')

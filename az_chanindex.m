@@ -20,7 +20,7 @@ for n = 1:length(ch)
      if arrayIdx
          idx(n) = arrayIdx;
      else
-         warning(sprintf('Channel %d on board %d does not exist in array!  Index will be zero.',ch(n),bd(n)))
+         warning('AZ_CHANINDEX:badchannel',sprintf('Channel %d on board %d does not exist in array!  Index will be zero.',ch(n),bd(n)))
          bad = [bad n];
      end
 end

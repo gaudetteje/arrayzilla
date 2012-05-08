@@ -9,6 +9,10 @@ function varargout = az_process_main(varargin)
 
 close all
 
+warning('OFF','CALC_SPECTRUM:fs');
+warning('OFF','CALC_SPECTRUM:dc');
+warning('OFF','AZ_CHANINDEX:badchannel');
+
 if ~exist('TDOA_frame','file')
     cLoc = fileparts(mfilename('fullpath'));
     addpath(fullfile(cLoc,'primary_analysis'));
@@ -22,10 +26,10 @@ PLOT3 = 0;          % 3D representation of array and source location
 PLOT4 = 0;          % spectrogram for each filtered call
 PLOT5 = 0;          % 3D beam surface/contour plot for each call
 
-% force (re)detection of calls
+% force (re)detection of calls - if true, overwrites existing callmap
 FORCEDET = false;
 
-% filter mode
+% filter mode - if true, applies time-frequency filtering around each harmonic
 FILTMODE = true;
 
 % default beam plot style
@@ -123,7 +127,7 @@ else
 end
 
 % plot time series data on several channels
-if PLOT0; plotTimeSeries(fname1, fname2, callmap(callIdx)); end
+if PLOT0; plotTimeSeries(fname1, fname2, callmap(callIdx)); drawnow; end
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -133,13 +137,7 @@ array = az_positions([19 12],[4 5]*.0254,[9/8 9/10]);
 % assign channel/board mapping to array struct
 array = az_channelmap(array,PLOT1);
 
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%% iterate over each call
-
-% preallocate structs
-warning('OFF','CALC_SPECTRUM:fs');
-warning('OFF','CALC_SPECTRUM:dc');
+%% preallocate structs
 N = length(callIdx);
 source(N).xSrc = [];
 source(N).ySrc = [];
@@ -148,17 +146,10 @@ source(N).residual = [];
 source(N).az = [];
 source(N).el = [];
 source(N).rng = [];
-fd = cell(N,1);
 beam = cell(N,1);
-% fd = {calc_spectrum(1)};
-% beam(N).f = [];
-% beam(N).x = [];
-% beam(N).y = [];
-% beam(N).X = [];
-% beam(N).Y = [];
-% beam(N).Z = [];
 
-
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% iterate over each call
 for k = 1:length(callIdx)
     try
     
@@ -168,25 +159,25 @@ for k = 1:length(callIdx)
     ts = az_convert(fname1,fname2,callmap(cNum),array);
     if PLOT2; plotSpecArray(array,ts); end
     
-    %% Equalize microphone responses using calibration data
-    %ts = az_equalize(ts);
-    
     %% Localize point sources in 3D space
     source(k) = az_localize(ts, array, PLOT3);
     
     %% Realign data, separate harmonic components, and filter to remove echoes and reverb
     ts = az_filter(ts, source(k), array, FILTMODE);
     
-    if PLOT4; plotSpecArray(array,ts); end
+    %% Equalize microphone responses using calibration data
+    %ts = az_equalize(ts);
     
     %% Correct data for transmission losses on each channel
-%     ts = az_armaloss(ts, source(k).rng);
+    ts = az_armaloss(ts, source(k).rng);
+    
+    if PLOT4; plotSpecArray(array,ts); end
     
     %% Analyze frequency-content of each channel
-    fd{k} = az_analysis(ts);
+    [fd(k),stat(k)] = az_analysis(ts,callmap(cNum));
     
     %% Interpolate beam data
-    beam{k} = az_calcbeam(fd{k}, array, source(k));%, 'pos', 'nearest');
+    beam{k} = az_calcbeam(fd(k), array, source(k));%, 'pos', 'nearest');
     if PLOT5; plotBeamPattern(beam{k},PLOTMODE); pause; end
     
     fprintf('\n\n*** Completed processing call %d ***\n\n',cNum)
@@ -221,7 +212,7 @@ if exist(beamfile,'file')
 end
 
 % save to beamfile
-save(beamfile,'beam','callIdx','source','array');
+save(beamfile,'beam','stat','callIdx','source','array');
 fprintf('Saving beam data to %s\n',beamfile);
 
 

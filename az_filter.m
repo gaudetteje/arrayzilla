@@ -108,8 +108,6 @@ t1 = min(ceil(mean(t1-delta(refidx)) + 3*std(t1-delta(refidx))) + nPad, size(R,1
 % initialize resulting time series data
 nCh = size(ts.data,2);
 nSamp = (t1-t0)+1;
-T = 1e3*(nSamp./ts.fs-(2*nPad/ts.fs));       % calc pulse length
-fprintf('Call duration is %.3g ms\n', T)
 
 % iterate over each channel and realign relative to receive delay (with padding)
 res.fs = ts.fs;
@@ -179,7 +177,7 @@ FM2 = mean(FM2,2);
 
 % iterate over each channel to perform harmonic separation
 fprintf('Filtering harmonic components\n');
-%res.data = [];
+
 res.fm1 = zeros(size(res.data));
 res.fm2 = zeros(size(res.data));
 for n = 1:nCh
@@ -191,8 +189,15 @@ for n = 1:nCh
     res.fm2(:,n) = mca_iffilt(res.data(:,n), FM2, 1, b, a);
 
     % recombine into "filtered" data set
-    res.data(:,n) = res.fm1(:,n) + res.fm2(:,n);
+    res.data(:,n) = real(res.fm1(:,n) + res.fm2(:,n));
 end
+
+% save relative start/stop times and reference channel
+res.tlen = nSamp./ts.fs-(2*nPad/ts.fs);       % calc pulse length
+res.t0 =  (t0+nPad)./res.fs - min(toa);      % compute relative pulse start time (corrected for TOA)
+res.t1 =  res.t0 + res.tlen;
+res.refch = refidx;
+fprintf('Call duration is %.3g ms\n', 1e3*res.tlen)
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
