@@ -50,6 +50,8 @@ end
 % assign event samples and times to struct
 events(1:N) = struct('s0',[0 0],'s1',[0 0],'t0',[0 0],'t1',[0 0]);
 for k=1:N
+    events(k).cNum = k;     % assign a call number for reference
+    
     events(k).s0(1) = hdr(1).event(idx(1,k));
     events(k).s1(1) = hdr(1).event(idx(1,k)+1)-1;
     events(k).s0(2) = hdr(2).event(idx(2,k));
@@ -101,7 +103,7 @@ function hdr = read_header(fname)
         hdr.blockevent(i) = res;
     end
     hdr.blockevent(end+1,1) = numel(hdr.event)+1;  % append last segment index
-
+    
     % extract digital data from auxiliary channel, if possible
 %     hdr.trig = hdr.trig - 2.5;                 % subtract DC offset
 %     hdr.sync = zeros(size(hdr.event));

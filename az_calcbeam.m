@@ -20,7 +20,7 @@ end
 %% hard coded parameters
 
 % frequency & grid spacing
-fRng = (19:2:101)*1e3;     % define frequency range bins
+fRng = (19.5:1:100.5)*1e3;     % define frequency range bins
 %fRng = (12.5:5:102.5)*1e3;    % define frequency range bins
 azPts = 19*3;            % numebr of x grid points
 elPts = 12*3;            % number of y grid points

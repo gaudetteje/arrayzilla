@@ -1,13 +1,13 @@
-function varargout = az_process_main(varargin)
-% AZ_PROCESS_MAIN  the main calling function for analyzing Arrayzilla data
+function varargout = az_process_beams(varargin)
+% AZ_PROCESS_BEAMS  analyze Arrayzilla data files and construct beams
 %
-% az_process_main(fname1,fname2) detects all calls in the files and saves
+% az_process_beams(fname1,fname2) detects all calls in the files and saves
 %     call map to a MAT file in the current directory
-% az_process_main(fname1,fname2,CALLS) only plots the calls in the
+% az_process_beams(fname1,fname2,CALLS) only plots the calls in the
 %     specified array
+% az_process_beams(fname1,fname2,CALLS,beamfile) writes beam data to the
+%     specified filename
 %
-
-close all
 
 warning('OFF','CALC_SPECTRUM:fs');
 warning('OFF','CALC_SPECTRUM:dc');
@@ -95,8 +95,22 @@ switch nargin
         % take specified call numbers
         CALLNUM = varargin{3};
         
+        % specify beam file to write
+        beamfile = varargin{4};
+        
+    case 5
+        % assign file names
+        fname1 = varargin{1};
+        fname2 = varargin{2};
+        
+        % take specified call numbers
+        CALLNUM = varargin{3};
+        
+        % specify beam file to write
+        beamfile = varargin{4};
+        
         % optional plotting parameters
-        FORCEDET = varargin{4};
+        FORCEDET = varargin{5};
         
     otherwise
         error('Bad number of input parameters.  Better luck next time!');
@@ -174,7 +188,7 @@ for k = 1:length(callIdx)
     if PLOT4; plotSpecArray(array,ts); end
     
     %% Analyze frequency-content of each channel
-    [fd(k),stat(k)] = az_analysis(ts,callmap(cNum));
+    [fd(k),ref(k)] = az_analysis(ts,callmap(cNum));
     
     %% Interpolate beam data
     beam{k} = az_calcbeam(fd(k), array, source(k));%, 'pos', 'nearest');
@@ -196,23 +210,22 @@ end
 
 
 % save data
-beamfile = [fname1(1:prefix(end)) 'beams.mat'];
+if ~exist('beamfile','var')
+    beamfile = [fname1(1:prefix(end)) 'beams.mat'];
+end
 
-% append data, if already exists
+% write data to new file, if already exists
 if exist(beamfile,'file')
-    resp = input('Overwrite existing file? [y/N]  ','s');
-    if ~strcmpi(resp,'y')
-        k = 1;
-        beamfile = sprintf('%s_%.2d.mat',beamfile(1:end-4),k);
-        while exist(beamfile,'file')
-            k = k+1;
-            beamfile = sprintf('%s_%.2d.mat',beamfile(1:end-7),k);
-        end
+    k = 1;
+    beamfile = sprintf('%s_%.2d.mat',beamfile(1:end-4),k);
+    while exist(beamfile,'file')
+        k = k+1;
+        beamfile = sprintf('%s_%.2d.mat',beamfile(1:end-7),k);
     end
 end
 
 % save to beamfile
-save(beamfile,'beam','stat','callIdx','source','array');
+save(beamfile,'beam','ref','source','array');
 fprintf('Saving beam data to %s\n',beamfile);
 
 
@@ -223,20 +236,20 @@ switch nargout
         varargout{1} = beam;
     case 2
         varargout{1} = beam;
-        varargout{2} = fd;
+        varargout{2} = ref;
     case 3
         varargout{1} = beam;
-        varargout{2} = fd;
+        varargout{2} = ref;
         varargout{3} = source;
     case 4
         varargout{1} = beam;
-        varargout{2} = fd;
+        varargout{2} = ref;
         varargout{3} = source;
         varargout{4} = array;
     case 5
         varargout{1} = beam;
-        varargout{2} = fd;
+        varargout{2} = ref;
         varargout{3} = source;
         varargout{4} = array;
-        varargout{5} = ts;
+        varargout{5} = fd;
 end

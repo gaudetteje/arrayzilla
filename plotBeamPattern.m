@@ -23,7 +23,7 @@ fprintf('Plotting beam pattern\n\n')
 
 % data "massaging" parameters
 smMETH = 'box';     % kernel type for smooth3.m
-smSIZE = 1;         % kernel size for smooth3.m (set to 1 for disable)
+smSIZE = 11;         % kernel size for smooth3.m (set to 1 for disable)
 
 % volume plotting options
 %TBD
@@ -32,8 +32,8 @@ smSIZE = 1;         % kernel size for smooth3.m (set to 1 for disable)
 cMap = 'hot';%flipud(hot);     %jet;    % colormap
 dBrange = 35;           % colorscale depth
 dBnorm = true;          % normalize to peak?
-azView = 8;%20;            % azimuth angle
-elView = 76;%20;            % elevation angle
+azView = 20;            % azimuth angle
+elView = 20;            % elevation angle
 
 % contour plotting options
 contourLev = -3;        % dB contour level for each frequency line [dB]
