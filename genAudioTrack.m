@@ -28,7 +28,7 @@ x = zeros(sLen,1);      % start with double precision, then reduce to int8 or in
 %% iterate over each call
 N = numel(cdata);                % total number of calls
 for i = 1:N
-    nSamp = size(cdata(i).ref,1);
+    nSamp = size(cdata(i).data,1);
     
     t0 = cdata(i).t0 - tRef;    % find start time relative to x
     s0 = round(t0 * cdata(1).fs);        % find starting sample number in x
@@ -36,7 +36,7 @@ for i = 1:N
     if isempty(idx), continue, end  % pass over empty blocks (failed during processing)
     
     % append data block to wav file with a taper to eliminate glitches in the audio
-    x(idx) = raisedcos(numel(idx)) .* cdata(i).ref;
+    x(idx) = raisedcos(numel(idx)) .* cdata(i).data;
 end
 
 % adjust maximum level to +/- 2^15 (for int16)
