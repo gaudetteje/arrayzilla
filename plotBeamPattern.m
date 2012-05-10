@@ -1,4 +1,4 @@
-function plotBeamPattern(B,varargin)
+function h = plotBeamPattern(B,varargin)
 % PLOTBEAMPATTERN  plots an individual measured 3D beam
 %
 % Beam is a struct containing the 3-dimensional array of complex beam data,
@@ -16,8 +16,8 @@ function plotBeamPattern(B,varargin)
 % To generate X and Y use:
 % [beam.AZ, beam.EL] = meshgrid(beam.az, beam.el);
 
-fprintf('\n\n*****************************************\n')
-fprintf('Plotting beam pattern\n\n')
+fprintf('\n*****************************************\n')
+fprintf('Plotting beam pattern\n')
 
 %% set default parameters
 
@@ -29,11 +29,11 @@ smSIZE = 11;         % kernel size for smooth3.m (set to 1 for disable)
 %TBD
 
 % surface plotting options
-cMap = 'hot';%flipud(hot);     %jet;    % colormap
+cMap = 'hot';     %jet;    % colormap
 dBrange = 35;           % colorscale depth
 dBnorm = true;          % normalize to peak?
-azView = 20;            % azimuth angle
-elView = 20;            % elevation angle
+azView = 22;            % azimuth angle
+elView = 40;            % elevation angle
 
 % contour plotting options
 contourLev = -3;        % dB contour level for each frequency line [dB]
@@ -151,8 +151,8 @@ switch PLOTMODE
             
             % convert (az,el,rho) data points to cartesian coordinates
             z = -B.Z(:,:,i) .* cos(B.AZ*pi/180) .* cos(B.EL*pi/180);
-            x = B.Z(:,:,i) .* sin(B.AZ*pi/180) .* cos(B.EL*pi/180);
-            y = B.Z(:,:,i) .* sin(B.EL*pi/180);
+            x = -B.Z(:,:,i) .* sin(B.AZ*pi/180) .* cos(B.EL*pi/180);
+            y = -B.Z(:,:,i) .* sin(B.EL*pi/180);
             
             % find peak value
             dBpeak = max(max(B.Z(:,:,i)));
@@ -210,14 +210,20 @@ switch PLOTMODE
                 fh = figure;
             end
             surfc(B.AZ, B.EL, B.Z(:,:,i)-dBpeak);
+            
+            % configure view and lighting
             view(azView,elView)
             shading interp
             lh = light;
             lighting phong
             %lightangle(45,45)
-            %axis equal
-            %set(gca,'ZLim',[dBpeak-55 dBpeak]);
             
+            % apply transparent mesh grid over surface
+            hSurf = findobj('type','surface');
+            set(hSurf,'EdgeColor',[.5 .5 .5]);
+            set(hSurf,'EdgeAlpha',0.2);
+            
+            % set colormap
             colormap(cMap);
             if dBnorm
                 cRange = [-dBrange 0];
@@ -226,6 +232,19 @@ switch PLOTMODE
             end
             set(gca,'CLim',cRange);
             colorbar
+            
+            % set axes and labels
+            set(gca,'Zlim',[-50 0])     %[dBpeak-50 dBpeak]);
+            set(gca,'Xlim',[-45 45])
+            set(gca,'Ylim',[-45 45])
+            
+            % adjust contour height
+            hCont = findobj('type','patch');
+            zd = get(hCont,'ZData');
+            for j = 1:numel(hCont)
+                set(hCont(j),'ZData',-50*ones(length(zd{j}),1))
+                set(hCont(j),'FaceColor','flat')
+            end
             
             title(sprintf('%g kHz', B.f(i)*1e-3),'fontsize',16)
             xlabel('az (\circ)','fontsize',16)
@@ -311,3 +330,6 @@ switch PLOTMODE
     otherwise
         error('Unknown PLOTMODE parameter.  Should be one of ''vol'', ''surf'', or ''cont''.')
 end
+
+% get current axis handle
+h = gca;

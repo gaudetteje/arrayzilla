@@ -1,16 +1,16 @@
-% script to generate movie of single beam over frequency
+function genBeamMovie(beam,avifile,varargin)
+% GENBEAMMOVIE  creates an AVI video showing a single beam over frequency
 
-beamfile = 'starbuck_beams_01.mat';
-prefix = 'starbuck';
+% force beam back into cell array
+if ~iscell(beam)
+    beam = {beam};
+end
 
-load(beamfile)
 
 for i=1:numel(beam)
     
-    vidname = [prefix '_' sprintf('%.3d',callIdx(i)) '.avi'];
-    
     % init AVI file
-    vidobj = VideoWriter(vidname);
+    vidobj = VideoWriter(avifile);      % need to include call number here, otherwise it will be overwritten
     vidobj.FrameRate = 10;
     
     open(vidobj);
@@ -20,6 +20,7 @@ for i=1:numel(beam)
     
     % iterate over frequency
     for j=1:numel(beam{i}.f)
+        
         plotBeamPattern(beam{i},beam{i}.f(j),'surf','fft',fh);
         drawnow
         

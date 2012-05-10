@@ -34,11 +34,16 @@ for n = 1:numel(t)-1
         beamname = sprintf('%s_beams_%d-%d',prefix,t(n),t(n+1)-1);
         [b, ref] = az_process_beams(fname1,fname2,t(n):t(n+1)-1,beamname);
         
+        % generate audio track
         wavname = sprintf('%s_call_%d-%d.wav',prefix,t(n),t(n+1)-1);
         genAudioTrack(ref, wavname);
         
+        % generate video track
+        aviname = sprintf('%s_call_%d-%d.avi',prefix,t(n),t(n+1)-1);
+        genVideoTrack(b, ref, aviname);
+        
     catch
-        warning('Crap!')
+        warning('Holy Crap!')
         continue
     end
 end

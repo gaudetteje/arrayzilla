@@ -1,7 +1,7 @@
 function x = genAudioTrack(cdata,wavfile,varargin)
 % GENAUDIOTRACK  compiles echolocation data into an audio track
 %
-% genAudioTrack(CALLDATA,FNAME) takes in an Nx1 data struct containing
+% genAudioTrack(CALLDATA,FILENAME) takes in an Nx1 data struct containing
 % reference channel data and reconstructs a "noise free" audio file, FNAME,
 % with the correct time alignment.
 % x = genAudioTrack(...) also returns the time series column vector
@@ -10,10 +10,10 @@ function x = genAudioTrack(cdata,wavfile,varargin)
 % in time
 
 % default parameters
-D = 5;                         % slow audio playback by factor of D
+D = 5;                          % slow audio playback by factor of D
 tBuf = 0.1;                     % add short buffer to beginning
 nbits = 16;
-
+fs = cdata(1).fs;
 
 %% initialize full time series
 N = numel(cdata);
@@ -31,7 +31,7 @@ for i = 1:N
     nSamp = size(cdata(i).data,1);
     
     t0 = cdata(i).t0 - tRef;    % find start time relative to x
-    s0 = round(t0 * cdata(1).fs);        % find starting sample number in x
+    s0 = round(t0 * fs);        % find starting sample number in x
     idx = (s0:s0+nSamp-1);
     if isempty(idx), continue, end  % pass over empty blocks (failed during processing)
     
@@ -43,11 +43,15 @@ end
 x = x ./ max(abs(x)/.999);  %(2^(nbits-1)
 
 % write WAV file
-wavwrite(x,cdata(1).fs/D,nbits,wavfile);
+wavwrite(x, fs/D, nbits, wavfile);
 
 % plot data for sanity check
-plot(x)
+t = (0:numel(x)-1)./fs;
+plot(t,x)
 grid on
 xlabel('Time (sec)')
 ylabel('Amplitude (Volts)')
 
+hold on
+marks = [cdata(:).t0]-tRef;
+plot(marks,ones(size(marks)),'o')
