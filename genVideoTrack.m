@@ -63,10 +63,10 @@ for n=1:N
         % plot new beam on existing figure
         if ~isempty(beam{cNum})     % skip beam if empty
             hAxis = plotBeamPattern(beam{cNum},f,'surf','fft',hFig);
-        else
+        %else
             % just plot previous beam for now - NEED TO FIX FAILED BEAM
             % PROCESSING!
-            hAxis = plotBeamPattern(beam{cNum-1},f,'surf','fft',hFig);
+            %hAxis = plotBeamPattern(beam{cNum-1},f,'surf','fft',hFig);
             %alpha('clear') % remove previous beam
         end
         
@@ -85,7 +85,7 @@ for n=1:N
         
     end
     
-    title(sprintf('Time %.2f, Call %d', n/(D*fRate), cNum-1))
+    title(sprintf('%.2f sec., Call %d', n/(D*fRate), cNum-1))
     
     % capture and add frame
     refreshdata

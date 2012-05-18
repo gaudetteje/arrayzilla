@@ -29,21 +29,24 @@ for n = 1:numel(t)-1
         if DEBUG
             plotTimeSeries('starbuck_side1.srz','starbuck_side2.srz',callmap(t(n):t(n+1)-1))
         end
-
-        % process each trial
+        
+%         % process each trial
         beamname = sprintf('%s_beams_%d-%d',prefix,t(n),t(n+1)-1);
-        [b, ref] = az_process_beams(fname1,fname2,t(n):t(n+1)-1,beamname);
+%         [beam, ref] = az_process_beams(fname1,fname2,t(n):t(n+1)-1,beamname);
+%         
+%         % generate audio track
+%         wavname = sprintf('%s_call_%d-%d.wav',prefix,t(n),t(n+1)-1);
+%         genAudioTrack(ref, wavname);
         
-        % generate audio track
-        wavname = sprintf('%s_call_%d-%d.wav',prefix,t(n),t(n+1)-1);
-        genAudioTrack(ref, wavname);
-        
+        load(beamname)
         % generate video track
         aviname = sprintf('%s_call_%d-%d.avi',prefix,t(n),t(n+1)-1);
-        genVideoTrack(b, ref, aviname);
+        genVideoTrack(beam, ref, aviname);
         
     catch
         warning('Holy Crap!')
+        ERR = lasterror;
+        disp(ERR.message)
         continue
     end
 end

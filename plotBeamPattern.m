@@ -32,8 +32,8 @@ smSIZE = 11;         % kernel size for smooth3.m (set to 1 for disable)
 cMap = 'hot';     %jet;    % colormap
 dBrange = 35;           % colorscale depth
 dBnorm = true;          % normalize to peak?
-azView = 22;            % azimuth angle
-elView = 40;            % elevation angle
+azView = 17;            % azimuth angle
+elView = 54;            % elevation angle
 
 % contour plotting options
 contourLev = -3;        % dB contour level for each frequency line [dB]
@@ -149,10 +149,14 @@ switch PLOTMODE
         % iterate over each frequency beam
         for i = fIdx
             
+            % need to convert radius to positive definite units!
+            
             % convert (az,el,rho) data points to cartesian coordinates
-            z = -B.Z(:,:,i) .* cos(B.AZ*pi/180) .* cos(B.EL*pi/180);
-            x = -B.Z(:,:,i) .* sin(B.AZ*pi/180) .* cos(B.EL*pi/180);
-            y = -B.Z(:,:,i) .* sin(B.EL*pi/180);
+            [x,y,z] = sph2cart(B.AZ*pi/180, B.EL*pi/180, ones(size(B.EL)));
+            %[x,y,z] = sph2cart(B.AZ*pi/180, B.EL*pi/180, B.Z(:,:,i));
+%            z = -B.Z(:,:,i) .* cos(B.AZ*pi/180) .* cos(B.EL*pi/180);
+%            x = -B.Z(:,:,i) .* sin(B.AZ*pi/180) .* cos(B.EL*pi/180);
+%            y = -B.Z(:,:,i) .* sin(B.EL*pi/180);
             
             % find peak value
             dBpeak = max(max(B.Z(:,:,i)));
@@ -183,9 +187,9 @@ switch PLOTMODE
             colorbar
             
             title(sprintf('%g kHz', B.f(i)*1e-3),'fontsize',16)
-            xlabel('az (\circ)','fontsize',16)
-            ylabel('el (\circ)','fontsize',16)
-            zlabel('dB','fontsize',16)
+            xlabel('azim. (\circ)','fontsize',16)
+            ylabel('elev. (\circ)','fontsize',16)
+            zlabel('magnitude (dB)','fontsize',16)
             
             set(gca,'fontsize',16);
             set(gcf,'color','w');
@@ -247,9 +251,9 @@ switch PLOTMODE
             end
             
             title(sprintf('%g kHz', B.f(i)*1e-3),'fontsize',16)
-            xlabel('az (\circ)','fontsize',16)
-            ylabel('el (\circ)','fontsize',16)
-            zlabel('dB','fontsize',16)
+            xlabel('azim. (\circ)','fontsize',16)
+            ylabel('elev. (\circ)','fontsize',16)
+            zlabel('magnitude (dB)','fontsize',16)
             
             set(gca,'fontsize',16);
             set(gcf,'color','w');

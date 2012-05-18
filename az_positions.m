@@ -71,6 +71,12 @@ end
 %% Calculate uniform mic (X,Y) positions in metric units [m]
 a.xPos = repmat(((1:Nx)-x0)*dx,1,Ny);
 a.yPos = sort(repmat(((1:Ny)-y0)*dy,1,Nx));
+a.Nx = Nx;
+a.Ny = Ny;
+a.dx = dx;
+a.dy = dy;
+a.x0 = x0;
+a.y0 = y0;
 
 % plot results
 if PLOTFLAG
@@ -78,11 +84,13 @@ if PLOTFLAG
     plot(a.xPos,a.yPos,'r.');
     title('Microphone positions for Arrayzilla')
     xlabel('X position (m)')
-    ylabel('Y position (m)')
+    ylabel('Z position (m)')
+    zlabel('Y position (m)')        % swap y and z for plot rotation
     grid on
     hold on
     
-    plot(0,0,'k+')            % origin of absolute array
+    % set axes
+    %plot(0,0,'k+')            % origin of absolute array
     axis equal
     axis([min(a.xPos - dx/2) max(a.xPos + dx/2) ...
           min(a.yPos - dy/2) max(a.yPos + dy/2)])
