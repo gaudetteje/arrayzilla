@@ -6,6 +6,17 @@ function plotArrayPoints(a,src)
 
 close all
 
+
+% assume the following spacing and dimensions if not specified
+if ~isfield(a,'dx')
+    a.Nx = 19;
+    a.Ny = 12;
+    a.dx = 0.1016;
+    a.dy = 0.1270;
+    a.x0 = 0.5000;
+    a.y0 = 0.5000;
+end
+
 %% generate plot of planar array
 
 % redefine array points around source origin

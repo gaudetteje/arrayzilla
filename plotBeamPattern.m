@@ -23,13 +23,13 @@ fprintf('Plotting beam pattern\n')
 
 % data "massaging" parameters
 smMETH = 'box';     % kernel type for smooth3.m
-smSIZE = 11;         % kernel size for smooth3.m (set to 1 for disable)
+smSIZE = 9;         % kernel size for smooth3.m (set to 1 for disable)
 
 % volume plotting options
 %TBD
 
 % surface plotting options
-cMap = 'hot';     %jet;    % colormap
+%cMap = 'hot';     %jet;    % colormap
 dBrange = 35;           % colorscale depth
 dBnorm = true;          % normalize to peak?
 azView = 17;            % azimuth angle
@@ -89,6 +89,13 @@ else
     end
     fIdx = unique(fIdx);    % remove dups
     fIdx(fIdx == 0) = [];   % remove zeros
+end
+
+% set colormap to change with frequency
+cBase = gray(64);
+colors = jet(numel(fIdx));
+for i = 1:numel(fIdx)
+    cMap{fIdx(i)} = cBase * diag(colors(i,:));
 end
 
 % figure handle
@@ -228,7 +235,7 @@ switch PLOTMODE
             set(hSurf,'EdgeAlpha',0.2);
             
             % set colormap
-            colormap(cMap);
+            colormap(cMap{i});
             if dBnorm
                 cRange = [-dBrange 0];
             else
