@@ -12,6 +12,13 @@ function [events, hdr] = az_detect(fname1,fname2)
 fprintf('\n\n***********************************************\n')
 fprintf('Detecting triggered events in data files\n\n')
 
+if ~exist(fname1,'file')
+    error('AZ_DETECT:fnf', 'Could not locate file "%s"', fname1)
+end
+if ~exist(fname2,'file')
+    error('AZ_DETECT:fnf', 'Could not locate file "%s"', fname2)
+end
+
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % read header content 
@@ -56,13 +63,12 @@ for k=1:N
     events(k).s1(1) = hdr(1).event(idx(1,k)+1)-1;
     events(k).s0(2) = hdr(2).event(idx(2,k));
     events(k).s1(2) = hdr(2).event(idx(2,k)+1)-1;
-
+    
     events(k).t0(1) = hdr(1).time(events(k).s0(1));
     events(k).t1(1) = hdr(1).time(events(k).s1(1));
     events(k).t0(2) = hdr(2).time(events(k).s0(2));
     events(k).t1(2) = hdr(2).time(events(k).s1(2));
 end
-
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %  Subfunction to read and process header info
@@ -91,10 +97,9 @@ function hdr = read_header(fname)
     hdr.block = [1; find(diff(hdr.count)~=1)+1];
     fprintf('\n Found %d data blocks in "%s"\n',numel(hdr.block),fname)
     
-    % look for trigger events by difference in clock time
-    hdr.event = [1; find(diff(hdr.clock) > 450)+1];
-    fprintf('\n  Found %d data segments (trigger events) in "%s"\n', length(hdr.event), fname);
-    
+    % look for trigger events by difference in clock time - append last sample
+    hdr.event = [1; find(diff(hdr.clock) > 450)+1; numel(hdr.count)+1];
+    fprintf('\n  Found %d data segments (trigger events) in "%s"\n', length(hdr.event)-1, fname);    
     % find indices to the first segment of each data block
     hdr.blockevent = zeros(numel(hdr.block),1);
     for i=1:numel(hdr.block)
@@ -102,7 +107,7 @@ function hdr = read_header(fname)
         assert(~isempty(res), 'Start of data block not aligned with any data segment!');      % THIS SHOULD NEVER HAPPEN
         hdr.blockevent(i) = res;
     end
-    hdr.blockevent(end+1,1) = numel(hdr.event)+1;  % append last segment index
+    hdr.blockevent(end+1,1) = numel(hdr.event);  % append last segment index
     
     % extract digital data from auxiliary channel, if possible
 %     hdr.trig = hdr.trig - 2.5;                 % subtract DC offset
