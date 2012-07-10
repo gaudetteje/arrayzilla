@@ -24,10 +24,10 @@ PLOT1 = 1;          % plot array channel positions
 PLOT2 = 1;          % spectrogram for each raw call
 PLOT3 = 1;          % 3D representation of array and source location
 PLOT4 = 1;          % spectrogram for each filtered call
-PLOT5 = 0;          % 3D beam surface/contour plot for each call
+PLOT5 = 1;          % 3D beam surface/contour plot for each call
 
 % force (re)detection of calls - if true, overwrites existing callmap
-FORCEDET = false;
+FORCEDET = true;
 
 % filter mode - if true, applies time-frequency filtering around each harmonic
 FILTMODE = true;

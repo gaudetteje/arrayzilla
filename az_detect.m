@@ -44,7 +44,7 @@ else
     fprintf('\nNo synchronization data was found on auxiliary channels!  Assuming perfect alignment exists (check this manually).\n')
     
     % take smallest of 2 first blocks
-    N = min([hdr(1).blockevent(2) hdr(2).blockevent(2)])-1;
+    N = max([hdr(1).blockevent(2) hdr(2).blockevent(2)])-1;
     
     % assign fake call list and indices
     calls = 1:N;
@@ -99,7 +99,8 @@ function hdr = read_header(fname)
     
     % look for trigger events by difference in clock time - append last sample
     hdr.event = [1; find(diff(hdr.clock) > 450)+1; numel(hdr.count)+1];
-    fprintf('\n  Found %d data segments (trigger events) in "%s"\n', length(hdr.event)-1, fname);    
+    fprintf('\n  Found %d data segments (trigger events) in "%s"\n', length(hdr.event), fname);
+    
     % find indices to the first segment of each data block
     hdr.blockevent = zeros(numel(hdr.block),1);
     for i=1:numel(hdr.block)
