@@ -125,7 +125,7 @@ if exist(callfile,'file') && ~FORCEDET
     fprintf('\nCall index file already exists!  Loading call data in "%s"...\n\n',callfile);
     load(callfile,'callmap');
 else
-    callmap = az_detect(fname1,fname2);
+    callmap = az_detect(fname1,fname2);     % detect trigger events in data header fields
     fprintf('\nSaving call index to "%s"...\n\n',callfile)
     save(callfile,'callmap');
 end
