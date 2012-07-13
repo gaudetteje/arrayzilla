@@ -18,7 +18,7 @@ N1 = size(res1,1);
 assert(N1>0,'Side 1 returned no data!')
 fprintf('  Done!\n\n')
 
-fprintf('Reading call data from side 1...  \n')
+fprintf('Reading call data from side 2...  \n')
 res2 = read_SRZ(fname2,idx2,ch2);
 N2 = size(res2,1);
 assert(N2>0,'Side 2 returned no data!')

@@ -64,22 +64,12 @@ zSrc = coords(3);
 
 fprintf('\nEstimated source location is (%g, %g, %g) [m]\n',xSrc,ySrc,zSrc)
 
-% calculate source to mic distance and angle for each channel
-[az, el, rng] = cart2sph(a.xPos-xSrc, a.yPos-ySrc, zSrc * ones(size(a.xPos)));
-az = -az*180/pi;
-el = el*180/pi;
-
-
-%%%%%%%%%%%%%
-% Z <=> Y
-% az1 = 90 - az2
-%%%%%%%%%%%%
-
-az2 = atan2(a.xPos-xSrc,zSrc)*180/pi;
-el2 = atan2(a.yPos-ySrc,zSrc)*180/pi;
+% calculate source to mic angle
+az = atan2(a.xPos-xSrc,zSrc)*180/pi;
+el = atan2(a.yPos-ySrc,zSrc)*180/pi;
 
 % calculate source to mic distance for each channel
-rng2 = dist([xSrc; ySrc; zSrc], [a.xPos; a.yPos; zeros(size(a.ch))]);
+rng = dist([xSrc; ySrc; zSrc], [a.xPos; a.yPos; zeros(size(a.ch))]);
 
 
 % return struct of results

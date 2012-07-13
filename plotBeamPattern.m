@@ -31,7 +31,7 @@ smSIZE = 9;         % kernel size for smooth3.m (set to 1 for disable)
 % surface plotting options
 %cMap = 'hot';     %jet;    % colormap
 dBrange = 35;           % colorscale depth
-dBnorm = true;          % normalize to peak?
+dBnorm = false;          % normalize to peak?
 azView = 17;            % azimuth angle
 elView = 54;            % elevation angle
 
