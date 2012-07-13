@@ -18,6 +18,10 @@ fnames = findfiles(wDir,'\.srz$');
 res = strfind(fnames,'side1.srz');
 idx1 = find(~cellfun(@isempty,res));
 
+if isempty(idx1)
+    fprintf('No data files found.  Aborting...')
+end
+
 %% iterate over each pair of files (side 1 and 2)
 for n = 1:numel(idx1)
     % find prefix of filename
@@ -28,6 +32,10 @@ for n = 1:numel(idx1)
     % verify side2 exists
     fname1 = fullfile(pname, [prefix '_side1' ext]);
     fname2 = fullfile(pname, [prefix '_side2' ext]);
+    
+    disp(repmat('*',1,70))
+    fprintf('Processing data files with prefix "%s":\n\t%s\t%s\n\n',prefix,fname1,fname2)
+    
     if ~existfile(fname2)
         warning('AZ_PROCESS_DATA:File Not Found','No matching side2 found for "%s" in "%s"\n  *** Skipping file ***',fullfile(fname,ext),pname)
         continue
@@ -38,7 +46,7 @@ for n = 1:numel(idx1)
     if existfile(callfile)
         load(callfile,'callmap');
     else
-        fprintf('Callmap not found.  Restarting ')
+        fprintf('Callmap not found.  Parsing data now...')
         callmap = az_detect(fname1,fname2);
         fprintf('\nSaving call index to "%s"...\n\n',callfile)
         save(callfile,'callmap');
@@ -54,6 +62,9 @@ for n = 1:numel(idx1)
     %% iterate over each trial
     tic
     for n = 1:numel(t)-1
+        
+        disp(repmat('*',1,70))
+        fprintf('Processing Trial #%d of %d...\n\n', n, numel(t))
         try
             % show time series for each call
             if DEBUG

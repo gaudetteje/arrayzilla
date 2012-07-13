@@ -1,5 +1,17 @@
 function ts = az_convert(fname1,fname2,call,array)
-% AZ_CONVERT takes the raw binary files and converts to Voltage units
+% AZ_CONVERT reads data from the raw binary files into a MATLAB structure
+%
+% TS = az_convert(FNAME1,FNAME2,CALLMAP,ARRAY) retrieves the data in the
+% SRZ file pair (FNAME1, FNAME2) using the CALLMAP structure.  Channel
+% numbers are mapped to array indices and coordinates using the ARRAY
+% struct.
+%
+% The function returns a structure, TS, with fields 'data' and 'fs'.
+% 'data' is an MxN matrix with M samples across N channels.  'fs' is a
+% scalar value holding the data sampling rate.
+%
+% Note:  CALLMAP is generated using az_detect and ARRAY is generated using
+% az_positions and az_channelmap.
 
 fprintf('\n\n***********************************************\n')
 

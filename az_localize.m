@@ -1,8 +1,9 @@
 function src = az_localize(ts, a, varargin)
-% AZ_LOCALIZE  localize sound sources for each pulse and map array
+% AZ_LOCALIZE  localize sound source for a single pulse and map array
 % coordinates to angular map (az/el)
 %
-% Note:  (0,0) vector is normal to array plane
+% Note:  The (0,0,Z) vector is normal to the array plane looking from the
+% point source as the origin.
 
 fprintf('\n\n***********************************************\n')
 fprintf('Localizing sound sources and calculating angles\n')
@@ -58,41 +59,35 @@ else
     warning('Hard coding position due to inconsistent results')
 end
 
-xSrc = coords(1);
-ySrc = coords(2);
-zSrc = coords(3);
-
-fprintf('\nEstimated source location is (%g, %g, %g) [m]\n',xSrc,ySrc,zSrc)
-
-% calculate source to mic angle
-az = atan2(a.xPos-xSrc,zSrc)*180/pi;
-el = atan2(a.yPos-ySrc,zSrc)*180/pi;
-
-% calculate source to mic distance for each channel
-rng = dist([xSrc; ySrc; zSrc], [a.xPos; a.yPos; zeros(size(a.ch))]);
-
-
-% return struct of results
-src.xSrc = xSrc;
-src.ySrc = ySrc;
-src.zSrc = zSrc;
+src.xSrc = coords(1);
+src.ySrc = coords(2);
+src.zSrc = coords(3);
 src.residual = coords(4:end);
 
-src.az = az;
-src.el = el;
-src.rng = rng;
+
+fprintf('\nEstimated source location is (%g, %g, %g) [m]\n', src.xSrc, src.ySrc, src.zSrc)
+
+% redefine array points around source origin
+xPos = a.xPos - src.xSrc;
+yPos = a.yPos - src.ySrc;
+zPos = ones(size(a.xPos)) * src.zSrc;
+
+% calculate source to mic distance and angle for each channel
+[src.az, src.el, src.rng] = cart2sph(xPos, zPos, yPos);
+src.az = 90 - src.az*180/pi;        % rotate by -90 and convert to degrees
+src.el = src.el*180/pi;             % convert to degrees
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% print calculated array parameters
-azRes = diff(az); azRes(azRes <= 0) = [];
-elRes = diff(el); elRes(elRes <= 0) = [];
+azRes = diff(src.az); azRes(azRes <= 0) = [];
+elRes = diff(src.el); elRes(elRes <= 0) = [];
 
 fprintf('\nBeam Coverage:\n')
 fprintf('Min. / Max. Horizontal Angle\n')
-fprintf('   %g / %g degrees\n', [min(az) max(az)]);
+fprintf('   %g / %g degrees\n', [min(src.az) max(src.az)]);
 fprintf('Min. / Max. Vertical Angle\n')
-fprintf('   %g / %g degrees\n\n', [min(el) max(el)]);
+fprintf('   %g / %g degrees\n\n', [min(src.el) max(src.el)]);
 
 fprintf('Beam Resolution:\n')
 fprintf('Min. / Max. Horizontal Resolution\n')
@@ -101,22 +96,78 @@ fprintf('Min. / Max. Vertical Resolution\n')
 fprintf('   %g / %g degrees\n\n', [min(elRes) max(elRes)]);
 
 fprintf('Minimum / Maximum Euclidean Distance\n')
-fprintf('  %g / %g meters\n', [min(rng) max(rng)]);
+fprintf('  %g / %g meters\n', [min(src.rng) max(src.rng)]);
 
 
 % plot spatial representation with source locations (Note: Y and Z are reversed to simplify 3d rotation)
 if PLOTFLAG
+    %% generate plot of planar array
+
+    % swap y and z for plot rotation
     figure
-    plot3(micpos(1,:),micpos(3,:),micpos(2,:),'.')      % sensor locations
+    plot3(xPos,zPos,yPos,'r.');
+    title('Microphone positions for Arrayzilla')
+    xlabel('X position (m)')
+    ylabel('Z position (m)')
+    zlabel('Y position (m)')
     grid on
     hold on
-    set(gca,'YDir','reverse')
-    xlabel('x [m]')
-    ylabel('z [m]')
-    zlabel('y [m]')
-    plot3(xSrc,zSrc,ySrc,'r.')           % estimated location
-    title(sprintf('Source @ (%.3f,%.3f,%.3f)',xSrc,ySrc,abs(zSrc)));
+
+    % set axes
     axis equal
+    view(-134,46)
+
+    % define linear array boundaries
+    bL = min(xPos - .0127);
+    bR = max(xPos + .0127);
+    bD = min(yPos - .0127);
+    bU = max(yPos + .0127);
+
+    % plot array boundary
+    plot3([bL bR bR bL bL], src.zSrc*ones(1,5), [bD bD bU bU bD], ...
+        'k', 'linewidth', 2)
+    axis([bL-a.dx bR+a.dx 0 src.zSrc bD-a.dy bU+a.dy])
+
+    plot3(0,src.zSrc,0,'k.')            % mark the array point normal to origin
+
+    % set tick marks
+    dt = 0.2;
+    set(gca,'XTick',(dt*floor(bL/dt) : dt : dt*ceil(bR/dt)))
+    set(gca,'ZTick',(dt*floor(bD/dt) : dt : dt*ceil(bU/dt)))
+    set(gca,'YTick',(0 : dt : dt*ceil(src.zSrc/dt)))
+    
+    
+    %% generate spherical coordinates
+    [az,el,rng] = cart2sph(xPos, zPos, yPos);
+    rho = 0.4;
+    [x,y,z] = sph2cart(az,el,rho*ones(size(rng)));
+
+    plot3(x,y,z,'b.')
+
+    % draw origin
+    plot3(0,0,0,'k+')
+
+    % draw spherical grid around origin
+    [X,Y,Z] = sphere(360/10);
+    idx1=1:37;              % elevation
+    idx2=19:37;             % azimuth
+    ah = surf(rho*X(idx1,idx2),rho*Y(idx1,idx2),rho*Z(idx1,idx2));
+    set(ah,'FaceColor','none')
+    set(ah,'EdgeColor',[.75 .75 .75])
+
+    
+    
+%     figure
+%     plot3(micpos(1,:),micpos(3,:),micpos(2,:),'.')      % sensor locations
+%     grid on
+%     hold on
+%     set(gca,'YDir','reverse')
+%     xlabel('x [m]')
+%     ylabel('z [m]')
+%     zlabel('y [m]')
+%     plot3(xSrc,zSrc,ySrc,'r.')           % estimated location
+%     title(sprintf('Source @ (%.3f,%.3f,%.3f)',xSrc,ySrc,abs(zSrc)));
+%     axis equal
     
     drawnow
 end
