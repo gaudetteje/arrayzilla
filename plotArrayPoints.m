@@ -2,10 +2,11 @@ function plotArrayPoints(a,src)
 % PLOTARRAYPOINTS  plots a 3D diagram showing the planar array sampling
 %   points and the angular coordinates they map to.
 %
-%
+% plotArrayPoints(A,SRC) 
 
 close all
-
+GENMOVIE = true;
+avifile = 'rotate_array_points.avi';
 
 % assume the following spacing and dimensions if not specified
 if ~isfield(a,'dx')
@@ -25,7 +26,7 @@ yPos = a.yPos - src.ySrc;
 zPos = src.zSrc * ones(size(xPos));
 
 % swap y and z for plot rotation
-figure
+fh = figure('color','white')
 plot3(xPos,zPos,yPos,'r.');
 title('Microphone positions for Arrayzilla')
 xlabel('X position (m)')
@@ -78,12 +79,33 @@ set(ah,'EdgeColor',[.75 .75 .75])
 
 drawnow
 
-%% rotate 
+%% rotate view and create movie
+if GENMOVIE
+    % init AVI file
+    vidobj = VideoWriter(avifile);      % need to include call number here, otherwise it will be overwritten
+    vidobj.FrameRate = 30;
+    vidobj.Quality = 25;
+    
+    open(vidobj);
+end
+
+% iterate over each view
 N = 200;
 az0 = linspace(-90,-270,N);
 el0 = [linspace(90,0,N/2) zeros(1,N/2)];
 for n = 1:N
     view(az0(n),el0(n))
-    %drawnow
     pause(.001)
+    if GENMOVIE
+        % capture and add frame
+        drawnow
+        F = getframe(fh);
+        writeVideo(vidobj,F);
+    end
+end
+
+% clean up
+if GENMOVIE
+    close(fh)
+    close(vidobj)
 end
