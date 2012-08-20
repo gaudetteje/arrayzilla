@@ -122,7 +122,10 @@ end
 %% estimate IA and IF curve for reference channel(s)
 
 % bailout option to skip filtering
-if ~FILTMODE, return, end
+if ~FILTMODE
+    warning('AZ_FILTER:Mode','IF filtering is currently set to bypass!')
+    return
+end
 
 % convert real data to its analytic form
 H = hilbert(res.data);

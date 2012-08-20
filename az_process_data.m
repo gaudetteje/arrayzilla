@@ -19,7 +19,7 @@ res = strfind(fnames,'side1.srz');
 idx1 = find(~cellfun(@isempty,res));
 
 if isempty(idx1)
-    fprintf('No data files found.  Aborting...')
+    fprintf('No data files found.  Aborting...\n\n')
 end
 
 %% iterate over each pair of files (side 1 and 2)
