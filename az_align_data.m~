@@ -61,7 +61,7 @@ if isdir(fname)
     files = findfiles(fname,'.srz',Inf,true);
     fprintf('Found %d SRZ data files in the directory "%s"\n', numel(files), fname)
     for fNum = 1:numel(files)
-        fprintf('\n###############################################################\n')
+        fprintf('\n################################################\n')
         fprintf('###  Processing "%s"\n',files{fNum})
         az_align_data(files{fNum},OPTIONS);
     end
@@ -124,12 +124,9 @@ while ~feof(fid)
         switch(lower(key(1)))
             % delete remaining bytes in file
             case 'd'
-                if strcmpi(OPTIONS,'auto')
-                    key = 'y';
-                else
+                if ~strcmp(OPTIONS,'auto')
                     key = input(sprintf('\nThis will remove the last %u bytes remaining (from 0x%x) in the file!\nAre you absolutely sure? [y/N]:  ',fstats.bytes-idx,idx),'s');
-                end
-                if isempty(key); key = 'n'; end
+                    if isempty(key); key = 'n'; end
                 if strcmpi(key(1),'y')
                     java.io.RandomAccessFile(fname,'rw').setLength(idx);
                     break
