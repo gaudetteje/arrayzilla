@@ -19,9 +19,9 @@ if ~exist('TDOA_frame','file')
 end
 
 % plotting flags
-PLOT0 = 0;          % time series of detected calls
-PLOT1 = 0;          % plot array channel positions
-PLOT2 = 0;          % spectrogram for each raw call
+PLOT0 = 1;          % time series of detected calls
+PLOT1 = 1;          % plot array channel positions
+PLOT2 = 1;          % spectrogram for each raw call
 PLOT3 = 0;          % 3D representation of array and source location
 PLOT4 = 0;          % spectrogram for each filtered call
 PLOT5 = 0;          % 3D beam surface/contour plot for each call
@@ -121,13 +121,16 @@ end
 %% Detect calls in data files and return timestamps
 prefix = regexp(fname1,'[_\-\ ]');      % use current filename
 callfile = [fname1(1:prefix(end)) 'callmap.mat'];
+hdrfile = [fname1(1:prefix(end)) 'hdr.mat'];
 if exist(callfile,'file') && ~FORCEDET
     fprintf('\nCall index file already exists!  Loading call data in "%s"...\n\n',callfile);
     load(callfile,'callmap');
 else
-    callmap = az_detect(fname1,fname2);     % detect trigger events in data header fields
+    [callmap,hdr] = az_detect(fname1,fname2);     % detect trigger events in data header fields
     fprintf('\nSaving call index to "%s"...\n\n',callfile)
     save(callfile,'callmap');
+    save(hdrfile,'hdr');
+    clear hdr
 end
 
 % get call index

@@ -43,31 +43,33 @@ else
     % otherwise, just use first valid block for now and manually align data segments :(
     fprintf('\nNo synchronization data was found on auxiliary channels!  Assuming perfect alignment exists (check this manually).\n')
     
-    % take smallest of 2 first blocks
-    N = max([hdr(1).blockevent(2) hdr(2).blockevent(2)])-1;
+    % determine number of events in each side
+    N = [numel(hdr(1).event) numel(hdr(2).event)];
     
-    % assign fake call list and indices
-    calls = 1:N;
-    idx(1,:) = 1:N;
-    idx(2,:) = 1:N;
+    % assign call list and indices
+    calls = 1:max(N);
+    idx = [1:N(1) nan(1,N(2)-N(1)) ; 1:N(2) nan(1,N(1)-N(2))];
 end
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % assign event samples and times to struct
-events(1:N) = struct('s0',[0 0],'s1',[0 0],'t0',[0 0],'t1',[0 0]);
-for k=1:N
+events(1:max(N)) = struct('s0',[0 0],'s1',[0 0],'t0',[0 0],'t1',[0 0]);
+for k=1:max(N)
     events(k).cNum = k;     % assign a call number for reference
     
-    events(k).s0(1) = hdr(1).event(idx(1,k));
-    events(k).s1(1) = hdr(1).event(idx(1,k)+1)-1;
-    events(k).s0(2) = hdr(2).event(idx(2,k));
-    events(k).s1(2) = hdr(2).event(idx(2,k)+1)-1;
-    
-    events(k).t0(1) = hdr(1).time(events(k).s0(1));
-    events(k).t1(1) = hdr(1).time(events(k).s1(1));
-    events(k).t0(2) = hdr(2).time(events(k).s0(2));
-    events(k).t1(2) = hdr(2).time(events(k).s1(2));
+    if (k < numel(hdr(1).event))
+        events(k).s0(1) = hdr(1).event(idx(1,k));
+        events(k).s1(1) = hdr(1).event(idx(1,k)+1)-1;
+        events(k).t0(1) = hdr(1).time(events(k).s0(1));
+        events(k).t1(1) = hdr(1).time(events(k).s1(1));
+    end
+    if (k < numel(hdr(2).event))
+        events(k).s0(2) = hdr(2).event(idx(2,k));
+        events(k).s1(2) = hdr(2).event(idx(2,k)+1)-1;
+        events(k).t0(2) = hdr(2).time(events(k).s0(2));
+        events(k).t1(2) = hdr(2).time(events(k).s1(2));
+    end
 end
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

@@ -9,7 +9,11 @@ function az_process_data(varargin)
 DEBUG = true;
 
 % prompt user for working directory
-wDir = uigetdir('Select a data directory');
+if ~nargin
+    wDir = uigetdir('Select a data directory');
+else
+    wDir = varargin{1};
+end
 
 % search directory for srz files
 fnames = findfiles(wDir,'\.srz$');
@@ -43,13 +47,15 @@ for n = 1:numel(idx1)
     
     %% load call map, if exists, otherwise create
     callfile = fullfile(pname, sprintf('%s_callmap.mat',prefix));
+    hdrfile = fullfile(pname, sprintf('%s_hdr.mat',prefix));
     if existfile(callfile)
         load(callfile,'callmap');
     else
         fprintf('Callmap not found.  Parsing data now...')
-        callmap = az_detect(fname1,fname2);
+        [callmap,hdr] = az_detect(fname1,fname2);
         fprintf('\nSaving call index to "%s"...\n\n',callfile)
         save(callfile,'callmap');
+        save(hdrfile,'hdr');
     end
     
     %% separate data set into trials from call map
@@ -61,7 +67,7 @@ for n = 1:numel(idx1)
 
     %% iterate over each trial
     tic
-    for n = 1:numel(t)-1
+    for n = 1 %1:numel(t)-1
         
         disp(repmat('*',1,70))
         fprintf('Processing Trial #%d of %d...\n\n', n, numel(t))
