@@ -1,7 +1,7 @@
 function plotTimeSeries(fname1,fname2,callmap)
 %  PLOTTIMESERIES  plots time series data from entire recording
 
-N = numel(callmap);            % total number of calls
+N = numel(callmap);            % total number of events
 ch1 = [72 1 110];
 ch2 = [49 1];
 

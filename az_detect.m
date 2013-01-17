@@ -44,7 +44,7 @@ else
     fprintf('\nNo synchronization data was found on auxiliary channels!  Assuming perfect alignment exists (check this manually).\n')
     
     % determine number of events in each side
-    N = [numel(hdr(1).event) numel(hdr(2).event)];
+    N = [numel(hdr(1).event) numel(hdr(2).event)]-1;
     
     % assign call list and indices
     calls = 1:max(N);

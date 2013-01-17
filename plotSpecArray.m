@@ -3,8 +3,8 @@ function plotSpecArray(array,ts,varargin)
 % array face for debugging purposes and sanity checks
 
 % plots spectrogram of a 5x5 set of channels around the array
-chNum = [1 2 26 27 28 63 64 75 48 49 42 43 72 97 98 47 48 77 36 37 110 111 112 2 1];
-bdNum = [1 1  2  2  2  1  1  2  2  2  1  1  1  2  2  1  1  1  2  2   1   1   1 2 2];
+chNum = [1 2 26 27 82 63 64 75 48 49 42 43 72 97 98 47 48 77 36 37 22 81 82 3 4];
+bdNum = [1 1  2  2  2  1  1  2  2  2  1  1  1  2  2  1  1  1  2  2  1  1  1 2 2];
 
 idx = az_chanindex(chNum, bdNum, array);
 

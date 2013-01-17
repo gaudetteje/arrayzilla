@@ -1,9 +1,7 @@
-function plotTriggerEvents(fname1,fname2,callmap,hdr)
+function plotTriggerEvents(hdr,callmap)
 %  PLOTTRIGGEREVENTS  plots trigger data from entire recording
 
-N = numel(callmap);            % total number of calls
-
-
+N = numel(callmap);            % total number of events
 
 % init indices
 data1 = cell(N,1);
@@ -22,18 +20,9 @@ for k = 1:N
     idx1 = (c.s0(1) : c.s1(1));
     idx2 = (c.s0(2) : c.s1(2));
     
-    % read all data from selected channels
-    data1{k} = read_SRZ(fname1,idx1,ch1) * (5 * 2^-16);
-    data2{k} = read_SRZ(fname2,idx2,ch2) * (5 * 2^-16);
-    
-    % append to time index
-    t1{k} = linspace(c.t0(1), c.t1(1), (c.s1(1)-c.s0(1))+1);
-    t2{k} = linspace(c.t0(2), c.t1(2), (c.s1(2)-c.s0(2))+1);
-    
-    % plot current call
-    plot(t1{k}, data1{k})
-    plot(t2{k}, data2{k})
-
+    % plot sync channel
+    plot(hdr(1).time(idx1), hdr(1).trig(idx1))
+    plot(hdr(2).time(idx2), hdr(2).trig(idx2),'--r')
 end
 
 grid on

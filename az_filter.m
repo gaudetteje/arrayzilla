@@ -20,13 +20,13 @@ function res = az_filter(ts, src, a, varargin)
 % - separate harmonics on all channels
 
 % optional inputs
-DEBUG = false;
+DEBUG = true;
 FILTMODE = true;
 REFMODE = 'fft';     % 'man'; %
 nPad = 128;     % number of samples to keep before/after detected signal
 nRef = 1;       % number of channels to use as reference
 BW = .035;      % lowpass filter bandwidth (normalized) for mca_iffilt
-c = calcSoundSpeed(22.5);
+c = calcSoundSpeed(21.12);
 if nargin > 2
     FILTMODE = varargin{1};
 end
@@ -117,6 +117,13 @@ for ch = 1:nCh
     res.data(:,ch) = ts.data(idx,ch) - mean(ts.data(idx,ch));
 end
 
+%% save relative start/stop times and reference channel
+res.tlen = nSamp./ts.fs-(2*nPad/ts.fs);       % calc pulse length
+res.t0 =  (t0+nPad)./res.fs - min(toa);      % compute relative pulse start time (corrected for TOA)
+res.t1 =  res.t0 + res.tlen;
+res.refch = refidx;
+fprintf('Call duration is %.3g ms\n', 1e3*res.tlen)
+
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% estimate IA and IF curve for reference channel(s)
@@ -133,11 +140,11 @@ H = hilbert(res.data);
 % iterate over each reference channel
 for n = 1:numel(refidx)
     % estimate first component
-    IF1 = mca_ifestimate(H(:,refidx(n)),1,.4,.4,.4);
+    IF1 = mca_ifestimate(H(:,refidx(n)),1,.4,.4,.4,2,0.025);
     H1 = mca_iffilt(H(:,refidx(n)),IF1,1);
     
     % estimate second component
-    IF2 = mca_ifestimate(H(:,refidx(n))-H1,1,.4,.4,.4);
+    IF2 = mca_ifestimate(H(:,refidx(n))-H1,1,.4,.4,.45,3,.04);
     
     % swap harmonics if necessary
     if sum(IF1) > sum(IF2)
@@ -194,13 +201,6 @@ for n = 1:nCh
     % recombine into "filtered" data set
     res.data(:,n) = real(res.fm1(:,n) + res.fm2(:,n));
 end
-
-% save relative start/stop times and reference channel
-res.tlen = nSamp./ts.fs-(2*nPad/ts.fs);       % calc pulse length
-res.t0 =  (t0+nPad)./res.fs - min(toa);      % compute relative pulse start time (corrected for TOA)
-res.t1 =  res.t0 + res.tlen;
-res.refch = refidx;
-fprintf('Call duration is %.3g ms\n', 1e3*res.tlen)
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

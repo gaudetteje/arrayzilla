@@ -60,17 +60,17 @@ for n = 1:numel(idx1)
     
     %% separate data set into trials from call map
     %%%% eventually, this should use trigger count with a switch toggled for each trial
-    t = [callmap(:).t0];                    % extract starting times of all events
-    t = find(diff(t(1:2:end)) > 0.6) + 2;   % use difference between events as trial indicator
-    t = t(diff(t) > 50);                    % remove trials with less than 50 pulses
-    t = [1 t numel(callmap)+1];             % add first and last events
+%    t = [callmap(:).t0];                    % extract starting times of all events
+%    t = find(diff(t(1:2:end)) > 0.6) + 2;   % use difference between events as trial indicator
+%    t = t(diff(t) > 50);                    % remove trials with less than 50 pulses
+%     t = [1 t numel(callmap)+1];             % add first and last events
 
     %% iterate over each trial
     tic
-    for n = 1 %1:numel(t)-1
+    for n = []%1:numel(t)-1
         
         disp(repmat('*',1,70))
-        fprintf('Processing Trial #%d of %d...\n\n', n, numel(t))
+        %fprintf('Processing Trial #%d of %d...\n\n', n, numel(t))
         try
             % show time series for each call
             if DEBUG
