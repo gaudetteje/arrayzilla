@@ -6,7 +6,7 @@ function az_process_data(varargin)
 % the directory or subdirectories will be processed if a matching side1/2 
 % pair is found
 
-DEBUG = true;
+DEBUG = false;
 
 % prompt user for working directory
 if ~nargin
@@ -65,9 +65,11 @@ for n = 1:numel(idx1)
 %    t = t(diff(t) > 50);                    % remove trials with less than 50 pulses
 %     t = [1 t numel(callmap)+1];             % add first and last events
 
+    t = [1 numel(callmap)+1];   % process entire file as one trial
+    
     %% iterate over each trial
     tic
-    for n = []%1:numel(t)-1
+    for n = 1:numel(t)-1
         
         disp(repmat('*',1,70))
         %fprintf('Processing Trial #%d of %d...\n\n', n, numel(t))
@@ -79,7 +81,7 @@ for n = 1:numel(idx1)
             end
 
             % process beam data
-            beamfile = fullfile(pname, sprintf('%s_beams_%d-%d',prefix,t(n),t(n+1)-1));
+            beamfile = fullfile(pname, sprintf('%s_beams_%d-%d.mat',prefix,t(n),t(n+1)-1));
             if ~existfile(beamfile)
                 [beam, ref] = az_process_beams(fname1,fname2,t(n):t(n+1)-1,beamfile);
             else
@@ -106,9 +108,9 @@ for n = 1:numel(idx1)
             continue
         end
         
-        % clear memory for next run
+        % clear memory and close figures for next run
         clear beam ref
-        
+        close all
     end
     toc
     
