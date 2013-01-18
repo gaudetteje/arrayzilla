@@ -20,11 +20,11 @@ end
 
 % plotting flags
 PLOT0 = 0;          % time series of detected calls
-PLOT1 = 0;          % plot array channel positions
+PLOT1 = 1;          % plot array channel positions
 PLOT2 = 0;          % spectrogram for each raw call
 PLOT3 = 0;          % 3D representation of array and source location
 PLOT4 = 0;          % spectrogram for each filtered call
-PLOT5 = 0;          % 3D beam surface/contour plot for each call
+PLOT5 = 1;          % 3D beam surface/contour plot for each call
 
 % force (re)detection of calls - if true, overwrites existing callmap
 FORCEDET = false;
@@ -195,7 +195,7 @@ for k = 1:length(callIdx)
     
     %% Interpolate beam data
     beam{k} = az_calcbeam(fd(k), array, source(k));%, 'pos', 'nearest');
-    if PLOT5; plotBeamPattern(beam{k},PLOTMODE); pause; end
+    if PLOT5; plotBeamPattern(beam{k},60e3,PLOTMODE); pause; end
     
     fprintf('\n\n*** Completed processing call %d ***\n\n',cNum)
     
