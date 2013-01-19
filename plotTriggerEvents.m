@@ -1,5 +1,8 @@
 function plotTriggerEvents(hdr,callmap)
-%  PLOTTRIGGEREVENTS  plots trigger data from entire recording
+% PLOTTRIGGEREVENTS  plots trigger data from entire recording
+%
+% plotTriggerEvents(HDR,CALLMAP) takes all calls contained in CALLMAP and
+% plots the raw auxiliary "sync" channel data
 
 N = numel(callmap);            % total number of events
 

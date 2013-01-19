@@ -20,7 +20,7 @@ end
 
 % plotting flags
 PLOT0 = 0;          % time series of detected calls
-PLOT1 = 1;          % plot array channel positions
+PLOT1 = 0;          % plot array channel positions
 PLOT2 = 0;          % spectrogram for each raw call
 PLOT3 = 0;          % 3D representation of array and source location
 PLOT4 = 0;          % spectrogram for each filtered call

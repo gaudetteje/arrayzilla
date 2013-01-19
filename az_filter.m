@@ -101,6 +101,10 @@ end
 t0 = max(floor(mean(t0-delta(refidx)) - 3*std(t0-delta(refidx))) - nPad, 1);
 t1 = min(ceil(mean(t1-delta(refidx)) + 3*std(t1-delta(refidx))) + nPad, size(R,1));
 
+% to avoid out of bounds errors, move back by maximum
+if t1+max(delta) > size(ts.data,1)
+    t1 = size(ts.data,1) - max(delta);
+end
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% realign and reduce data window
@@ -113,7 +117,7 @@ nSamp = (t1-t0)+1;
 res.fs = ts.fs;
 res.data = zeros(nSamp,nCh);
 for ch = 1:nCh
-    idx = (t0+delta(ch) : t1+delta(ch));        % MIGHT NEED ASSERTION TO PREVENT OUT OF BOUNDS ERROR
+    idx = (t0+delta(ch) : t1+delta(ch));
     res.data(:,ch) = ts.data(idx,ch) - mean(ts.data(idx,ch));
 end
 
