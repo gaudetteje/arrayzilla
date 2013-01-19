@@ -1,5 +1,5 @@
 
-fname = '20130115_Dori1.AVI';
+fname = '20130115_Dori2.AVI';
 
 %% extract audio data from AVI file
 [~,aud] = mmread(fullfile(pwd,fname),0);
@@ -8,8 +8,9 @@ fname = '20130115_Dori1.AVI';
 %%
 fs = aud.rate;
 t = (0:size(aud.data,1)-1)./fs;
-%figure; plot(t,aud.data(:,1))
+figure; plot(t,aud.data(:,1))
 
+%%
 idx = (6*fs:7*fs);
 winlen = 128;
 nfft = 512;

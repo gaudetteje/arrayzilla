@@ -40,7 +40,7 @@ TL = [TL; flipud(TL(2:end-1,:))];      % mirror full spectrum (removing point at
 B = zeros(Nb+1,Nch);
 A = zeros(Na+1,Nch);
 
-fprintf('\n\n*****************************************\n')
+fprintf('\n***********************************************\n')
 fprintf('Inverting transmission losses on channel    ')
 for cNum = 1:Nch
     fprintf('%s%.3d',char([8 8 8]),cNum);

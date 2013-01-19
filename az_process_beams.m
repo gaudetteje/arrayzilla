@@ -24,7 +24,7 @@ PLOT1 = 0;          % plot array channel positions
 PLOT2 = 0;          % spectrogram for each raw call
 PLOT3 = 0;          % 3D representation of array and source location
 PLOT4 = 0;          % spectrogram for each filtered call
-PLOT5 = 1;          % 3D beam surface/contour plot for each call
+PLOT5 = 0;          % 3D beam surface/contour plot for each call
 
 % force (re)detection of calls - if true, overwrites existing callmap
 FORCEDET = false;
@@ -156,18 +156,30 @@ array = az_channelmap(array,PLOT1);
 
 %% preallocate structs
 N = length(callIdx);
-source(N).xSrc = [];
-source(N).ySrc = [];
-source(N).zSrc = [];
-source(N).residual = [];
-source(N).az = [];
-source(N).el = [];
-source(N).rng = [];
+
+[source(1:N).xSrc] = deal([]);
+[source(1:N).ySrc] = deal([]);
+[source(1:N).zSrc] = deal([]);
+[source(1:N).residual] = deal([]);
+[source(1:N).az] = deal([]);
+[source(1:N).el] = deal([]);
+[source(1:N).rng] = deal([]);
+
 beam = cell(N,1);
+
+[ref(1:N).cNum] = deal([]);
+[ref(1:N).t0] = deal([]);
+[ref(1:N).t1] = deal([]);
+[ref(1:N).tlen] = deal([]);
+[ref(1:N).ch] = deal([]);
+[ref(1:N).data] = deal([]);
+[ref(1:N).fs] = deal([]);
+[ref(1:N).done] = deal(false);
+[ref(1:N).err] = deal([]);
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% iterate over each call
-for k = 1:length(callIdx)
+for k = 1:N
     try
     
     cNum = callIdx(k);
@@ -187,25 +199,28 @@ for k = 1:length(callIdx)
     
     %% Correct data for transmission losses on each channel
     ts = az_armaloss(ts, source(k).rng);
-    
     if PLOT4; plotSpecArray(array,ts); end
     
+    %% estimate bulk parameters
+    ref(k) = az_estimate_params(ref(k),ts,callmap(cNum));
+    
     %% Analyze frequency-content of each channel
-    [fd(k),ref(k)] = az_analysis(ts,callmap(cNum));
+    fd(k) = az_analysis(ts);
     
     %% Interpolate beam data
     beam{k} = az_calcbeam(fd(k), array, source(k));%, 'pos', 'nearest');
+    
     if PLOT5; plotBeamPattern(beam{k},60e3,PLOTMODE); pause; end
     
-    fprintf('\n\n*** Completed processing call %d ***\n\n',cNum)
-    
+    fprintf('\n**************************************\n')
+    fprintf('*** Completed processing call %d ***\n\n',cNum)
+    ref(k).done = true;             % set done flag
+
     %% If problem arises, issue error message and move to next call
-    catch
-        fprintf('ERROR: \n')
-        ERR = lasterror;
-        disp(ERR.message)
-        
-        fprintf('\n#######################################\n');
+    catch ME
+        ref(k).error = ME;
+        disp(getReport(ME));
+        fprintf('#######################################\n');
         fprintf('#####  Failed to process call %d  #####\n',cNum);
         fprintf('#######################################\n\n');
     end

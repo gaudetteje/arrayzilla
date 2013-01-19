@@ -5,7 +5,7 @@ function src = az_localize(ts, a, varargin)
 % Note:  The (0,0,Z) vector is normal to the array plane looking from the
 % point source as the origin.
 
-fprintf('\n\n***********************************************\n')
+fprintf('\n***********************************************\n')
 fprintf('Localizing sound sources and calculating angles\n')
 
 DEBUG = false;

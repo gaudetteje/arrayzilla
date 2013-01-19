@@ -1,8 +1,8 @@
 function beam = az_calcbeam(fd,array,src,varargin)
 % AZ_CALCBEAM  calculates and interpolates beams across frequency
 
-fprintf('\n\n*****************************************\n')
-fprintf('Interpolating and smoothing beam pattern\n\n')
+fprintf('\n***********************************************\n')
+fprintf('Interpolating and smoothing beam pattern\n')
 
 % optional parameters
 DEBUG = 0;
@@ -89,7 +89,6 @@ if isfield(fd,'if1')
             drawnow, close(fh)
         end
     end
-    
 end
 
 if isfield(fd,'if2')
@@ -122,5 +121,4 @@ if isfield(fd,'if2')
             drawnow, close(fh)
         end
     end
-    
 end

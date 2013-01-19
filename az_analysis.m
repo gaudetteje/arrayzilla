@@ -1,7 +1,7 @@
-function [fd,ref] = az_analysis(ts,cmap,varargin)
+function fd = az_analysis(ts,varargin)
 % AZ_ANALYSIS  Computes frequency response of each channel
 
-fprintf('\n\n*****************************************\n')
+fprintf('\n***********************************************\n')
 
 % estimate magnitude/phase per frequency bin
 fprintf('Analyzing spectral content of received data\n')
@@ -33,19 +33,3 @@ if isfield(ts,'fm1')
     fd.if2 = IF2;
     fd.ia2 = IA2;
 end
-
-% extract statistics for each individual call (stats on all calls will follow)
-fprintf('Extracting bulk parameters\n')
-ref.cNum = cmap.cNum;
-ref.t0 = ts.t0 + cmap.t0(1);       % add absolute trigger time to relative start time
-ref.t1 = ts.t1 + cmap.t1(1);       % add absolute trigger time to relative start time
-ref.tlen = ts.tlen;
-ref.ch = ts.refch;
-ref.data = real(ts.data(:,ts.refch));     % save reference time series data
-ref.fs = ts.fs;
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% add individual call statistics below
-%%% (sweep rate, bandwidth, etc.)
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-

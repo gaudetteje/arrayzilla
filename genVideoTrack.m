@@ -20,6 +20,11 @@ tBuf = 0.1;                     % add short buffer to beginning
 fRate = 30;                     % specify frame rate
 f = 60e3;                       % frequency bin to plot
 
+% override frequency parameter
+if nargin > 3
+    f = varargin{1};
+end
+
 
 % compute timescale and frame numbers
 t = [cdata(:).t0];

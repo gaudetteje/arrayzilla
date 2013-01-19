@@ -31,10 +31,11 @@ if nargin > 2
     FILTMODE = varargin{1};
 end
 
-fprintf('\n\n***********************************************\n')
+fprintf('\n***********************************************\n')
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% find best reference channel(s) in data set
+fprintf('Finding best reference channel based on estimated SNR from FFT\n');
 switch lower(REFMODE)
     case 'fft'
         % select the channel with the largest SNR difference
@@ -108,6 +109,7 @@ end
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% realign and reduce data window
+fprintf('Realigning data and reducing data window\n');
 
 % initialize resulting time series data
 nCh = size(ts.data,2);
@@ -126,7 +128,6 @@ res.tlen = nSamp./ts.fs-(2*nPad/ts.fs);       % calc pulse length
 res.t0 =  (t0+nPad)./res.fs - min(toa);      % compute relative pulse start time (corrected for TOA)
 res.t1 =  res.t0 + res.tlen;
 res.refch = refidx;
-fprintf('Call duration is %.3g ms\n', 1e3*res.tlen)
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -204,6 +205,9 @@ for n = 1:nCh
 
     % recombine into "filtered" data set
     res.data(:,n) = real(res.fm1(:,n) + res.fm2(:,n));
+    
+    %%% assert energy in original data and fm1+fm2 are about equal
+    %%% if not, assume we had a filtering problem!
 end
 
 

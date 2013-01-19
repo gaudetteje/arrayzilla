@@ -13,7 +13,7 @@ function ts = az_convert(fname1,fname2,call,array)
 % Note:  CALLMAP is generated using az_detect and ARRAY is generated using
 % az_positions and az_channelmap.
 
-fprintf('\n\n***********************************************\n')
+fprintf('\n***********************************************\n')
 
 % find sample numbers to retrieve on each board
 idx1 = (call.s0(1):call.s1(1));
@@ -28,13 +28,13 @@ fprintf('Reading call data from side 1...  \n')
 [res1, hdr1] = read_SRZ(fname1,idx1,ch1);
 N1 = size(res1,1);
 assert(N1>0,'Side 1 returned no data!')
-fprintf('  Done!\n\n')
+fprintf('  Done!\n')
 
 fprintf('Reading call data from side 2...  \n')
 res2 = read_SRZ(fname2,idx2,ch2);
 N2 = size(res2,1);
 assert(N2>0,'Side 2 returned no data!')
-fprintf('  Done!\n\n')
+fprintf('  Done!\n')
 
 % check to ensure both sides have equal length, truncate if necessary
 fprintf('Rearranging data columns to match array definition\n')

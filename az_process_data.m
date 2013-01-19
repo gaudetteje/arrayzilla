@@ -8,6 +8,8 @@ function az_process_data(varargin)
 
 DEBUG = false;
 
+f = [30e3 60e3 90e3];       % frequencies to plot
+
 % prompt user for working directory
 if ~nargin
     wDir = uigetdir('Select a data directory');
@@ -95,9 +97,11 @@ for n = 1:numel(idx1)
             end
 
             % generate video track
-            aviname = fullfile(pname, sprintf('%s_call_%d-%d.avi',prefix,t(n),t(n+1)-1)) ;
-            if ~existfile(aviname)
-                genVideoTrack(beam, ref, aviname);
+            for m = 1:numel(f)
+                aviname = fullfile(pname, sprintf('%s_%dkHz_call_%d-%d.avi',prefix,round(f(m)*1e-3),t(n),t(n+1)-1)) ;
+                if ~existfile(aviname)
+                    genVideoTrack(beam, ref, aviname, f(m));
+                end
             end
 
         catch
@@ -111,7 +115,9 @@ for n = 1:numel(idx1)
         % clear memory and close figures for next run
         clear beam ref
         close all
+        pause(1)
     end
     toc
+    disp(datestr(now))
     
 end
