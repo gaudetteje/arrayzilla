@@ -31,6 +31,7 @@ smSIZE = 3;         % kernel size for smooth3.m (set to 1 for disable)
 % surface plotting options
 %cMap = 'hot';     %jet;    % colormap
 dBrange = 35;           % colorscale depth
+zLim = [-100 -20];        % visual depth
 dBnorm = false;          % normalize to peak?
 azView = 17;            % azimuth angle
 elView = 54;            % elevation angle
@@ -93,9 +94,9 @@ end
 
 % set colormap to change with frequency
 cBase = gray(64);
-colors = jet(numel(fIdx));
+colors = jet(numel(B.f));
 for i = 1:numel(fIdx)
-    cMap{fIdx(i)} = cBase * diag(colors(i,:));
+    cMap{fIdx(i)} = cBase * diag(colors(fIdx(i),:));
 end
 
 % figure handle
@@ -220,7 +221,11 @@ switch PLOTMODE
             else
                 fh = figure;
             end
-            surfc(B.AZ, B.EL, B.Z(:,:,i)-dBpeak);
+            if dBnorm
+                surfc(B.AZ, B.EL, B.Z(:,:,i)-dBpeak);
+            else
+                surfc(B.AZ, B.EL, B.Z(:,:,i));
+            end
             
             % configure view and lighting
             view(azView,elView)
@@ -245,7 +250,11 @@ switch PLOTMODE
             colorbar
             
             % set axes and labels
-            set(gca,'Zlim',[-50 0])     %[dBpeak-50 dBpeak]);
+            if dBnorm
+                set(gca,'Zlim',zLim);%+dBpeak);%[dBpeak-50 dBpeak]);
+            else
+                set(gca,'Zlim',zLim)
+            end
             set(gca,'Xlim',[-45 45])
             set(gca,'Ylim',[-45 45])
             
@@ -253,18 +262,21 @@ switch PLOTMODE
             hCont = findobj('type','patch');
             zd = get(hCont,'ZData');
             for j = 1:numel(hCont)
-                set(hCont(j),'ZData',-50*ones(length(zd{j}),1))
+                set(hCont(j),'ZData',zLim(1)*ones(length(zd{j}),1))
                 set(hCont(j),'FaceColor','flat')
             end
             
-            title(sprintf('%g kHz', B.f(i)*1e-3),'fontsize',16)
-            xlabel('azim. (\circ)','fontsize',16)
-            ylabel('elev. (\circ)','fontsize',16)
-            zlabel('magnitude (dB)','fontsize',16)
             
             set(gca,'fontsize',16);
             set(gcf,'color','w');
             
+            xlabel('azim. (\circ)','fontsize',16)
+            ylabel('elev. (\circ)','fontsize',16)
+            zlabel('magnitude (dB)','fontsize',16)
+            title(sprintf('%g kHz', B.f(i)*1e-3),'fontsize',16)
+            
+            
+            %pause(0.25)
         end
         
     % plot contours over all frequencies

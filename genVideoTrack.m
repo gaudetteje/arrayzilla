@@ -25,12 +25,10 @@ if nargin > 3
     f = varargin{1};
 end
 
-
 % compute timescale and frame numbers
 t = [cdata(:).t0];
-t = tBuf + t - t(1);            % call times (original rate)
-T = tBuf + (cdata(end).t1(1) - cdata(1).t0(1));      % total duration
-
+t = tBuf + t -  min(t);         % call times (original rate)
+T = tBuf + (max([cdata.t1]) - min([cdata.t0]));        % total duration
 
 t2 = t * D;                     % relative call times (slowed by D with padding)
 T2 = T * D;                     % call times (playback rate)
@@ -90,7 +88,7 @@ for n=1:N
         
     end
     
-    title(sprintf('%.2f sec., Call %d', n/(D*fRate), cNum-1))
+    title(sprintf('%.2f sec., Call %d, %g kHz', n/(D*fRate), cNum-1, f*1e-3))
     
     % capture and add frame
     refreshdata

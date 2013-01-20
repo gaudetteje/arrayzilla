@@ -6,6 +6,13 @@ function az_process_data(varargin)
 % the directory or subdirectories will be processed if a matching side1/2 
 % pair is found
 
+
+% start logging text session
+logname = [datestr(now,'yyyymmdd_HHMM') '_log.txt'];
+diary(logname)
+fprintf('Started processing data files:  %s',datestr(now))
+
+
 DEBUG = false;
 
 f = [30e3 60e3 90e3];       % frequencies to plot
@@ -67,7 +74,7 @@ for n = 1:numel(idx1)
 %    t = t(diff(t) > 50);                    % remove trials with less than 50 pulses
 %     t = [1 t numel(callmap)+1];             % add first and last events
 
-    t = [1 numel(callmap)+1];   % process entire file as one trial
+    t = [300 311]; %numel(callmap)+1];   % process entire file as one trial
     
     %% iterate over each trial
     tic
@@ -104,11 +111,10 @@ for n = 1:numel(idx1)
                 end
             end
 
-        catch
+        catch ME
             % bail out and continue with next call
-            warning('Holy Crap!')
-            ERR = lasterror;
-            disp(ERR.message)
+            warning('Could not process files!')
+            disp(getReport(ME))
             continue
         end
         
@@ -121,3 +127,7 @@ for n = 1:numel(idx1)
     disp(datestr(now))
     
 end
+
+fprintf('\nCompleted processing all data files:  ')
+disp(datestr(now))
+diary off

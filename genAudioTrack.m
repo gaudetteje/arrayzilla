@@ -18,7 +18,7 @@ fs = cdata(1).fs;
 %% initialize full time series
 N = numel(cdata);
 tRef = cdata(1).t0 - tBuf;
-tLen = tBuf + (cdata(N).t1(1) - cdata(1).t0(1));      % total duration
+tLen = tBuf + (max([cdata.t1]) - min([cdata.t0]));      % total duration
 sLen = ceil(tLen * cdata(1).fs);
 
 fprintf('Reconstructing original time series of length %g seconds and %d samples\n',tLen,sLen)
