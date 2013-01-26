@@ -162,7 +162,7 @@ N = length(eIdx);
 
 beam = cell(N,1);
 
-[ref(1:N).cNum] = deal([]);
+[ref(1:N).eNum] = deal([]);
 [ref(1:N).t0] = deal([]);
 [ref(1:N).t1] = deal([]);
 [ref(1:N).tlen] = deal([]);
@@ -177,38 +177,50 @@ beam = cell(N,1);
 for k = 1:N
     try
     
-    cNum = eIdx(k);
+    eNum = eIdx(k);
+% need to do something about index K, since multiple calls can occur per event
     
-    %% Convert raw recorded digital data to voltage units
-    ts = az_convert(fname1,fname2,events(cNum),array);
-    if PLOT2; plotSpecArray(array,ts); end
-    
-    %% Localize point sources in 3D space
-    source(k) = az_localize(ts, array, PLOT3);
-    
-    %% Realign data, separate harmonic components, and filter to remove echoes and reverb
-    ts = az_filter(ts, source(k), array, FILTMODE);
-    
-    %% Equalize microphone responses using calibration data
-    %ts = az_equalize(ts);
-    
-    %% Correct data for transmission losses on each channel
-    ts = az_armaloss(ts, source(k).rng);
-    if PLOT4; plotSpecArray(array,ts); end
-    
-    %% estimate bulk parameters
-    ref(k) = az_estimate_params(ref(k),ts,events(cNum));
-    
-    %% Analyze frequency-content of each channel
-    fd(k) = az_analysis(ts);
-    
-    %% Interpolate beam data
-    beam{k} = az_calcbeam(fd(k), array, source(k));%, 'pos', 'nearest');
-    
-    if PLOT5; plotBeamPattern(beam{k},60e3,PLOTMODE); pause; end
+    % look for multiple calls in each event; if found, iterate over each one
+    calls = az_split_event(fname1,fname2,events(eNum));
+    for cNum = 1:numel(calls)
+        if numel(calls) > 1
+            fprintf('\n********************************\n')
+            fprintf('*** Processing call %d of %d ***\n\n',cNum,numel(calls))
+        end
+
+        %% Convert raw recorded digital data to voltage units
+        ts = az_convert(fname1,fname2,calls(cNum),array);
+        if PLOT2; plotSpecArray(array,ts); end
+
+        %% Localize point sources in 3D space
+        source(k) = az_localize(ts, array, PLOT3);
+
+        %% Realign data, separate harmonic components, and filter to remove echoes and reverb
+        ts = az_filter(ts, source(k), array, FILTMODE);
+
+        %% Equalize microphone responses using calibration data
+        %ts = az_equalize(ts);
+
+        %% Correct data for transmission losses on each channel
+        ts = az_armaloss(ts, source(k).rng);
+        if PLOT4; plotSpecArray(array,ts); end
+
+        %% estimate bulk parameters
+        ref(k) = az_estimate_params(ref(k),ts,events(eNum));
+
+        %% Analyze frequency-content of each channel
+        fd(k) = az_analysis(ts);
+
+        %% Interpolate beam data
+        beam{k} = az_calcbeam(fd(k), array, source(k));%, 'pos', 'nearest');
+
+        if PLOT5; plotBeamPattern(beam{k},60e3,PLOTMODE); pause; end
+        
+    end
     
     fprintf('\n**************************************\n')
-    fprintf('*** Completed processing event %d ***\n\n',cNum)
+    fprintf('*** Completed processing event %d ***\n',eNum)
+    fprintf('\n**************************************\n\n')
     ref(k).done = true;             % set done flag
 
     %% If problem arises, issue error message and move to next event
@@ -216,7 +228,7 @@ for k = 1:N
         ref(k).error = ME;
         disp(getReport(ME));
         fprintf('#######################################\n');
-        fprintf('#####  Failed to process event %d  #####\n',cNum);
+        fprintf('#####  Failed to process event %d  #####\n',eNum);
         fprintf('#######################################\n\n');
     end
 end
