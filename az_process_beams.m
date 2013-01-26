@@ -1,11 +1,11 @@
 function varargout = az_process_beams(varargin)
 % AZ_PROCESS_BEAMS  analyze Arrayzilla data files and construct beams
 %
-% az_process_beams(fname1,fname2) detects all calls in the files and saves
-%     call map to a MAT file in the current directory
-% az_process_beams(fname1,fname2,CALLS) only plots the calls in the
+% az_process_beams(fname1,fname2) detects all events in the files and saves
+%     event map to a MAT file in the current directory
+% az_process_beams(fname1,fname2,EVENTS) only plots the events in the
 %     specified array
-% az_process_beams(fname1,fname2,CALLS,beamfile) writes beam data to the
+% az_process_beams(fname1,fname2,EVENTS,beamfile) writes beam data to the
 %     specified filename
 %
 
@@ -26,7 +26,7 @@ PLOT3 = 0;          % 3D representation of array and source location
 PLOT4 = 0;          % spectrogram for each filtered call
 PLOT5 = 0;          % 3D beam surface/contour plot for each call
 
-% force (re)detection of calls - if true, overwrites existing callmap
+% force (re)detection of events - if true, overwrites existing events
 FORCEDET = false;
 
 % filter mode - if true, applies time-frequency filtering around each harmonic
@@ -38,15 +38,15 @@ PLOTMODE = 'surf';
 %PLOTMODE = 'horz';
 %PLOTMODE = 'vert';
 
-CALLNUM = [];       % don't process calls unless entered, only detect them and save callmap
+EVENTNUM = [];       % don't process events unless entered, only detect them and save events
 
 
 % prompt for filename if not entered
 switch nargin
     case {0,1}
-        % take first parameter as callnum if it's numeric
+        % take first parameter as eventnum if it's numeric
         if nargin == 1 && isnumeric(varargin{1})
-            CALLNUM = varargin{1};
+            EVENTNUM = varargin{1};
         % take first parameter as FORCEDET if boolean
         elseif nargin == 1 && islogical(varargin{1})
             FORCEDET = varargin{1};
@@ -84,16 +84,16 @@ switch nargin
         fname1 = varargin{1};
         fname2 = varargin{2};
         
-        % take specified call numbers
-        CALLNUM = varargin{3};
+        % take specified event numbers
+        EVENTNUM = varargin{3};
         
     case 4
         % assign file names
         fname1 = varargin{1};
         fname2 = varargin{2};
         
-        % take specified call numbers
-        CALLNUM = varargin{3};
+        % take specified event numbers
+        EVENTNUM = varargin{3};
         
         % specify beam file to write
         beamfile = varargin{4};
@@ -103,8 +103,8 @@ switch nargin
         fname1 = varargin{1};
         fname2 = varargin{2};
         
-        % take specified call numbers
-        CALLNUM = varargin{3};
+        % take specified event numbers
+        EVENTNUM = varargin{3};
         
         % specify beam file to write
         beamfile = varargin{4};
@@ -118,33 +118,28 @@ end
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%% Detect calls in data files and return timestamps
+%% Detect trigger events in data files and return index
 prefix = regexp(fname1,'[_\-\ ]');      % use current filename
-callfile = [fname1(1:prefix(end)) 'callmap.mat'];
+eventfile = [fname1(1:prefix(end)) 'events.mat'];
 hdrfile = [fname1(1:prefix(end)) 'hdr.mat'];
-if exist(callfile,'file') && ~FORCEDET
-    fprintf('\nCall index file already exists!  Loading call data in "%s"...\n\n',callfile);
-    load(callfile,'callmap');
+if exist(eventfile,'file') && ~FORCEDET
+    load(eventfile,'events');                               % load data file, if exists
 else
-    [callmap,hdr] = az_detect(fname1,fname2);     % detect trigger events in data header fields
-    fprintf('\nSaving call index to "%s"...\n\n',callfile)
-    save(callfile,'callmap');
-    save(hdrfile,'hdr');
-    clear hdr
+    events = az_detect(fname1,fname2,eventfile,hdrfile);    % detect trigger events in data header fields
 end
 
-% get call index
-if CALLNUM == Inf
-    callIdx = 1:length(callmap);    % assign callmap index
+% get event index
+if EVENTNUM == Inf
+    eIdx = 1:length(events);    % assign events index
 else
-    callIdx = CALLNUM;              % otherwise use default
-    if isempty(callIdx)
-        return              % terminate if no calls to process
+    eIdx = EVENTNUM;              % otherwise use default
+    if isempty(eIdx)
+        return              % terminate if no events to process
     end
 end
 
 % plot time series data on several channels
-if PLOT0; plotTimeSeries(fname1, fname2, callmap(callIdx)); drawnow; end
+if PLOT0; plotTimeSeries(fname1, fname2, events(eIdx)); drawnow; end
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -155,7 +150,7 @@ array = az_positions([19 12],[4 5]*.0254,[9/8 9/10]);
 array = az_channelmap(array,PLOT1);
 
 %% preallocate structs
-N = length(callIdx);
+N = length(eIdx);
 
 [source(1:N).xSrc] = deal([]);
 [source(1:N).ySrc] = deal([]);
@@ -178,14 +173,14 @@ beam = cell(N,1);
 [ref(1:N).err] = deal([]);
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%% iterate over each call
+%% iterate over each event
 for k = 1:N
     try
     
-    cNum = callIdx(k);
+    cNum = eIdx(k);
     
     %% Convert raw recorded digital data to voltage units
-    ts = az_convert(fname1,fname2,callmap(cNum),array);
+    ts = az_convert(fname1,fname2,events(cNum),array);
     if PLOT2; plotSpecArray(array,ts); end
     
     %% Localize point sources in 3D space
@@ -202,7 +197,7 @@ for k = 1:N
     if PLOT4; plotSpecArray(array,ts); end
     
     %% estimate bulk parameters
-    ref(k) = az_estimate_params(ref(k),ts,callmap(cNum));
+    ref(k) = az_estimate_params(ref(k),ts,events(cNum));
     
     %% Analyze frequency-content of each channel
     fd(k) = az_analysis(ts);
@@ -213,15 +208,15 @@ for k = 1:N
     if PLOT5; plotBeamPattern(beam{k},60e3,PLOTMODE); pause; end
     
     fprintf('\n**************************************\n')
-    fprintf('*** Completed processing call %d ***\n\n',cNum)
+    fprintf('*** Completed processing event %d ***\n\n',cNum)
     ref(k).done = true;             % set done flag
 
-    %% If problem arises, issue error message and move to next call
+    %% If problem arises, issue error message and move to next event
     catch ME
         ref(k).error = ME;
         disp(getReport(ME));
         fprintf('#######################################\n');
-        fprintf('#####  Failed to process call %d  #####\n',cNum);
+        fprintf('#####  Failed to process event %d  #####\n',cNum);
         fprintf('#######################################\n\n');
     end
 end

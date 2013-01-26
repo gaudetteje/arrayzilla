@@ -24,8 +24,8 @@ for k = 1:N
     idx2 = (c.s0(2) : c.s1(2));
     
     % plot sync channel
-    plot(hdr(1).time(idx1), hdr(1).trig(idx1))
-    plot(hdr(2).time(idx2), hdr(2).trig(idx2),'--r')
+    plot(hdr(1).time(idx1), hdr(1).aux(idx1))
+    plot(hdr(2).time(idx2), hdr(2).aux(idx2),'--r')
 end
 
 grid on
