@@ -181,7 +181,7 @@ for k = 1:N
 % need to do something about index K, since multiple calls can occur per event
     
     % look for multiple calls in each event; if found, iterate over each one
-    calls = az_split_event(fname1,fname2,events(eNum));
+    [ts,calls] = az_split_event(fname1,fname2,events(eNum),array);
     for cNum = 1:numel(calls)
         if numel(calls) > 1
             fprintf('\n********************************\n')
@@ -189,7 +189,7 @@ for k = 1:N
         end
 
         %% Convert raw recorded digital data to voltage units
-        ts = az_convert(fname1,fname2,calls(cNum),array);
+        %ts = az_convert(fname1,fname2,calls(cNum),array);
         if PLOT2; plotSpecArray(array,ts); end
 
         %% Localize point sources in 3D space
@@ -216,6 +216,10 @@ for k = 1:N
 
         if PLOT5; plotBeamPattern(beam{k},60e3,PLOTMODE); pause; end
         
+        % get next call data in event
+        if cNum < numel(calls)
+            ts = az_split_event(fname1,fname2,calls(cNum+1),array);
+        end
     end
     
     fprintf('\n**************************************\n')

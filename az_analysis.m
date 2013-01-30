@@ -11,6 +11,9 @@ x.fs = ts.fs;
 x.data = [zeros(250,size(ts.data,2)); ts.data; zeros(250,size(ts.data,2))];
 nfft = 2*floor(size(x.data,1)/2);       % ensure even to avoid warning msg in calc_spectrum
 fd = calc_spectrum(x,nfft,@blackmanharris,1,0.5,'half','ac','Vrms');
+%%% Try using peak value of STFT since there is an inherent smoothing of
+%%% the TF plane...  This should average out some of the noise in each
+%%% channel
 
 % Hilbert analysis of each call
 if isfield(ts,'fm1')
