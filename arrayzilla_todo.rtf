@@ -7,14 +7,22 @@
 \f0\fs28 \cf0 Arrayzilla MATLAB Task List\
 ---------------------------------------------------------\
 \
-Data Analysis:\
-- az_analysis.m - return additional parameters (HSA IF/IA, max amp. vs. freq vs. position, FFT)\
-- remove noise-only events within call structure\
-- split calls with multiple detected signals\
+Data Processing:\
+- validate az_split_event works on multiple calls\
+- save call struct just like event struct for ploting, etc.\
+\
 - add bulk parameters to ref (az_analysis)\
 - script to plot & save bulk parameters vs time\
-- correct angular coordinates\
 \
+- az_split_event - throw out bad channels automatically using energy across time (sum(E,1)) if channels show too much or too little energy\
+- az_channelmap - move code to explicitly remove bad channels and combine with automated results from az_split_event in new function - az_remove_channels.m?\
+\pard\tx720\tx1440\tx2160\tx2880\tx3600\tx4320\tx5040\tx5760\tx6480\tx7200\tx7920\tx8640\pardirnatural
+\cf0 \
+- correct angular coordinates\
+- az_analysis.m - return additional parameters (HSA IF/IA, max amp. vs. freq vs. position, FFT)\
+\pard\tx720\tx1440\tx2160\tx2880\tx3600\tx4320\tx5040\tx5760\tx6480\tx7200\tx7920\tx8640\pardirnatural
+\cf0 \
+--------------\
 Beam Visualization:\
 - add side-by-side video of beam data with video data\
 \

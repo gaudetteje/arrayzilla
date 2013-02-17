@@ -1,4 +1,4 @@
-function ref = az_estimate_params(ref,ts,cmap)
+function ref = az_estimate_params(ts,cmap)
 % AZ_ESTIMATE_PARAMS  takes processed data from each call and derives basic
 % bulk parameters, such as start time, pulse length, stop frequency, etc.
 

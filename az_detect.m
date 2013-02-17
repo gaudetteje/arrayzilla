@@ -26,6 +26,9 @@ end
 eventfile = [];
 hdrfile = [];
 switch nargin
+    case 2
+        prefix = regexp(fname1,'[_\-\ ]');      % use current filename
+        eventfile = [fname1(1:prefix(end)) 'events.mat'];
     case 3
         eventfile = varargin{1};
     case 4
@@ -86,6 +89,7 @@ for k=1:max(N)
         events(k).t0(2) = hdr(2).time(events(k).s0(2));
         events(k).t1(2) = hdr(2).time(events(k).s1(2));
     end
+    
 end
 
 

@@ -2,10 +2,11 @@ function plotArrayPoints(a,src)
 % PLOTARRAYPOINTS  plots a 3D diagram showing the planar array sampling
 %   points and the angular coordinates they map to.
 %
-% plotArrayPoints(A,SRC) 
+% plotArrayPoints(ARRAY,SOURCE) plots array geometry and mapped angular
+% coordinates relative to the sound source
 
 close all
-GENMOVIE = true;
+GENMOVIE = false;
 avifile = 'rotate_array_points.avi';
 
 % assume the following spacing and dimensions if not specified
@@ -26,7 +27,7 @@ yPos = a.yPos - src.ySrc;
 zPos = src.zSrc * ones(size(xPos));
 
 % swap y and z for plot rotation
-fh = figure('color','white')
+fh = figure('color','white');
 plot3(xPos,zPos,yPos,'r.');
 title('Microphone positions for Arrayzilla')
 xlabel('X position (m)')

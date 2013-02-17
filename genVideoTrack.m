@@ -12,7 +12,9 @@ function genVideoTrack(beam,cdata,avifile,varargin)
 
 close all
 
-opengl('software');
+if ispc
+    opengl('software');
+end
 
 % default parameters
 D = 5;                          % slow audio playback by factor of D

@@ -147,7 +147,7 @@ if PLOT0; plotTimeSeries(fname1, fname2, events(eIdx)); drawnow; end
 array = az_positions([19 12],[4 5]*.0254,[9/8 9/10]);
 
 % assign channel/board mapping to array struct
-array = az_channelmap(array,PLOT1);
+array = az_channelmap(array,PLOT1);     % MOVE BAD CHANNEL SPECIFICATION, DETECTION & REDUCTION TO LATER
 
 %% preallocate structs
 N = length(eIdx);
@@ -162,74 +162,72 @@ N = length(eIdx);
 
 beam = cell(N,1);
 
-[ref(1:N).eNum] = deal([]);
-[ref(1:N).t0] = deal([]);
-[ref(1:N).t1] = deal([]);
-[ref(1:N).tlen] = deal([]);
-[ref(1:N).ch] = deal([]);
-[ref(1:N).data] = deal([]);
-[ref(1:N).fs] = deal([]);
-[ref(1:N).done] = deal(false);
-[ref(1:N).err] = deal([]);
+%ref = struct();
+% [ref(1:N).eNum] = deal([]);
+% [ref(1:N).t0] = deal([]);
+% [ref(1:N).t1] = deal([]);
+% [ref(1:N).tlen] = deal([]);
+% [ref(1:N).ch] = deal([]);
+% [ref(1:N).data] = deal([]);
+% [ref(1:N).fs] = deal([]);
+% [ref(1:N).done] = deal(false);
+% [ref(1:N).error] = deal([]);
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% iterate over each event
-for k = 1:N
+cNum = 0;      % initialize number of calls detected in all events
+for eNum = eIdx
     try
-    
-    eNum = eIdx(k);
-% need to do something about index K, since multiple calls can occur per event
-    
+
     % look for multiple calls in each event; if found, iterate over each one
-    [ts,calls] = az_split_event(fname1,fname2,events(eNum),array);
-    for cNum = 1:numel(calls)
+    calls = az_split_event(fname1,fname2,events(eNum),array);
+    
+    % iterate over each call in event
+    for m = 1:numel(calls)
+        cNum = cNum + 1;
+        
         if numel(calls) > 1
             fprintf('\n********************************\n')
-            fprintf('*** Processing call %d of %d ***\n\n',cNum,numel(calls))
+            fprintf('*** Processing call %d of %d ***\n\n',m,numel(calls))
         end
 
         %% Convert raw recorded digital data to voltage units
-        %ts = az_convert(fname1,fname2,calls(cNum),array);
+        ts = az_convert(fname1,fname2,calls(m),array);
         if PLOT2; plotSpecArray(array,ts); end
 
         %% Localize point sources in 3D space
-        source(k) = az_localize(ts, array, PLOT3);
+        source(cNum) = az_localize(ts, array, PLOT3);
 
         %% Realign data, separate harmonic components, and filter to remove echoes and reverb
-        ts = az_filter(ts, source(k), array, FILTMODE);
+        ts = az_filter(ts, source(cNum), array, FILTMODE);
 
         %% Equalize microphone responses using calibration data
         %ts = az_equalize(ts);
 
         %% Correct data for transmission losses on each channel
-        ts = az_armaloss(ts, source(k).rng);
+        ts = az_armaloss(ts, source(cNum).rng);
         if PLOT4; plotSpecArray(array,ts); end
 
         %% estimate bulk parameters
-        ref(k) = az_estimate_params(ref(k),ts,events(eNum));
+        ref(cNum) = az_estimate_params(ts,calls(cNum));
 
         %% Analyze frequency-content of each channel
-        fd(k) = az_analysis(ts);
+        fd(cNum) = az_analysis(ts);
 
         %% Interpolate beam data
-        beam{k} = az_calcbeam(fd(k), array, source(k));%, 'pos', 'nearest');
+        beam{cNum} = az_calcbeam(fd(cNum), array, source(cNum));%, 'pos', 'nearest');
 
-        if PLOT5; plotBeamPattern(beam{k},60e3,PLOTMODE); pause; end
-        
-        % get next call data in event
-        if cNum < numel(calls)
-            ts = az_split_event(fname1,fname2,calls(cNum+1),array);
-        end
+        if PLOT5; plotBeamPattern(beam{cNum},60e3,PLOTMODE); pause; end
     end
     
     fprintf('\n**************************************\n')
     fprintf('*** Completed processing event %d ***\n',eNum)
     fprintf('\n**************************************\n\n')
-    ref(k).done = true;             % set done flag
+    ref(cNum).done = true;             % set done flag
 
     %% If problem arises, issue error message and move to next event
     catch ME
-        ref(k).error = ME;
+        ref(cNum).error = ME;
         disp(getReport(ME));
         fprintf('#######################################\n');
         fprintf('#####  Failed to process event %d  #####\n',eNum);

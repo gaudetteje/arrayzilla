@@ -1,10 +1,10 @@
-function plotTriggerEvents(hdr,callmap)
-% PLOTTRIGGEREVENTS  plots trigger data from entire recording
+function plotTriggerEvents(hdr,events)
+% PLOTTRIGGEREVENTS  plots auxiliary channel data vs. time
 %
-% plotTriggerEvents(HDR,CALLMAP) takes all calls contained in CALLMAP and
-% plots the raw auxiliary "sync" channel data
+% plotTriggerEvents(HDR,EVENTS) takes all events contained in EVENTS and
+% plots the raw auxiliary "sync" channel data saved to the HDR struct
 
-N = numel(callmap);            % total number of events
+N = numel(events);            % total number of events
 
 % init indices
 data1 = cell(N,1);
@@ -17,7 +17,7 @@ hold on;
 
 % iterate over each call
 for k = 1:N
-    c = callmap(k);
+    c = events(k);
     
     % sample index
     idx1 = (c.s0(1) : c.s1(1));

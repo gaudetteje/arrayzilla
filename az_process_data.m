@@ -10,7 +10,8 @@ function az_process_data(varargin)
 % start logging text session
 logname = [datestr(now,'yyyymmdd_HHMM') '_log.txt'];
 diary(logname)
-fprintf('Started processing data files:  %s',datestr(now))
+disp(repmat('*',1,70))
+fprintf('Started processing data files:  %s\n',datestr(now))
 
 
 DEBUG = false;
@@ -54,38 +55,39 @@ for n = 1:numel(idx1)
         continue
     end
     
-    %% load call map, if exists, otherwise create
-    callfile = fullfile(pname, sprintf('%s_callmap.mat',prefix));
+    %% load event map, if exists, otherwise create
+    eventfile = fullfile(pname, sprintf('%s_events.mat',prefix));
     hdrfile = fullfile(pname, sprintf('%s_hdr.mat',prefix));
-    if existfile(callfile)
-        load(callfile,'callmap');
+    if existfile(eventfile)
+        fprintf('Loading precomputed event structure...\n')
+        load(eventfile,'events');
     else
         fprintf('Callmap not found.  Parsing data now...')
-        [callmap,hdr] = az_detect(fname1,fname2);
-        fprintf('\nSaving call index to "%s"...\n\n',callfile)
-        save(callfile,'callmap');
+        [events,hdr] = az_detect(fname1,fname2);
+        fprintf('\nSaving event index to "%s"...\n\n',eventfile)
+        save(eventfile,'events');
         save(hdrfile,'hdr');
     end
     
-    %% separate data set into trials from call map
+    %% separate data set into trials from event map
     %%%% eventually, this should use trigger count with a switch toggled for each trial
-%    t = [callmap(:).t0];                    % extract starting times of all events
+%    t = [events(:).t0];                    % extract starting times of all events
 %    t = find(diff(t(1:2:end)) > 0.6) + 2;   % use difference between events as trial indicator
 %    t = t(diff(t) > 50);                    % remove trials with less than 50 pulses
-%     t = [1 t numel(callmap)+1];             % add first and last events
+%     t = [1 t numel(events)+1];             % add first and last events
 
-    t = [1 numel(callmap)+1];   % process entire file as one trial
+    t = [1 numel(events)+1];   % process entire file as one trial
     
     %% iterate over each trial
     tic
     for n = 1:numel(t)-1
         
         disp(repmat('*',1,70))
-        %fprintf('Processing Trial #%d of %d...\n\n', n, numel(t))
+        fprintf('Processing event block #%d of %d...\n\n', n, numel(t)-1)
         try
-            % show time series for each call
+            % show time series for each event
             if DEBUG
-                plotTimeSeries(fname1,fname2,callmap(t(n):t(n+1)-1))
+                plotTimeSeries(fname1,fname2,events(t(n):t(n+1)-1))
                 drawnow
             end
 
@@ -111,8 +113,11 @@ for n = 1:numel(idx1)
                 end
             end
 
+            % combine beam video and audio with camera video
+            %TBD
+            
         catch ME
-            % bail out and continue with next call
+            % bail out and continue with next event
             warning('Could not process files!')
             disp(getReport(ME))
             continue
