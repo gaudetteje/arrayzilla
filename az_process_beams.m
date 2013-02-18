@@ -123,7 +123,9 @@ prefix = regexp(fname1,'[_\-\ ]');      % use current filename
 eventfile = [fname1(1:prefix(end)) 'events.mat'];
 hdrfile = [fname1(1:prefix(end)) 'hdr.mat'];
 if exist(eventfile,'file') && ~FORCEDET
+    fprintf('Loading events from file...')
     load(eventfile,'events');                               % load data file, if exists
+    fprintf(' Done\n')
 else
     events = az_detect(fname1,fname2,eventfile,hdrfile);    % detect trigger events in data header fields
 end
@@ -162,7 +164,7 @@ N = length(eIdx);
 
 beam = cell(N,1);
 
-%ref = struct();
+ref = {};%struct();
 % [ref(1:N).eNum] = deal([]);
 % [ref(1:N).t0] = deal([]);
 % [ref(1:N).t1] = deal([]);
@@ -209,7 +211,7 @@ for eNum = eIdx
         if PLOT4; plotSpecArray(array,ts); end
 
         %% estimate bulk parameters
-        ref(cNum) = az_estimate_params(ts,calls(cNum));
+        ref{cNum} = az_estimate_params(ts,calls(m));
 
         %% Analyze frequency-content of each channel
         fd(cNum) = az_analysis(ts);
@@ -220,14 +222,14 @@ for eNum = eIdx
         if PLOT5; plotBeamPattern(beam{cNum},60e3,PLOTMODE); pause; end
     end
     
-    fprintf('\n**************************************\n')
-    fprintf('*** Completed processing event %d ***\n',eNum)
-    fprintf('\n**************************************\n\n')
-    ref(cNum).done = true;             % set done flag
+    fprintf('\n***************************************\n')
+    fprintf('*** Completed processing event %.3d ***\n',eNum)
+    fprintf('***************************************\n\n')
+    ref{cNum}.done = true;             % set done flag
 
     %% If problem arises, issue error message and move to next event
     catch ME
-        ref(cNum).error = ME;
+        ref{cNum}.error = ME;
         disp(getReport(ME));
         fprintf('#######################################\n');
         fprintf('#####  Failed to process event %d  #####\n',eNum);

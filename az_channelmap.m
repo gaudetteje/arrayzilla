@@ -3,8 +3,11 @@ function a = az_channelmap(a,varargin)
 % recorder files
 %
 % A = az_channelmap(A) takes in a struct, A, containing coordinate fields
-% 'xPos' and 'yPos' generated from az_positions and appends 'bd', 'ch',
-% 'badCh1', and 'badCh2' to the struct.
+%   'xPos' and 'yPos' generated from az_positions and appends 'bd', 'ch',
+%   'badCh1', and 'badCh2' to the struct.
+% A = az_channelmap(A,true) also plots the 2D microphone positions in array
+%   coordinates with Z axis corresponding to channel number for
+%   identification
 %
 % Note:  Channel and board numbers are hard coded values and must be
 % updated manually if array configuration is ever changed.
@@ -15,7 +18,7 @@ if nargin > 1
     PLOTFLAG = varargin{1};
 end
 
-% bump in first column of sensors
+% bump in first column of sensors to match hardware
 a.xPos(a.xPos < 0) = 0.0127;
 
 % Assign each coordinate to channel number in recorded data (use 0 for no connection)
