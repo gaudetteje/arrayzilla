@@ -1,8 +1,11 @@
-function [call] = az_split_event(fname1,fname2,event,array)
+function [call] = az_split_event(fname1,fname2,event,varargin)
 % AZ_SPLIT_EVENT searches raw binary data for one or more calls in each event
 %
-% CALL = az_convert(FNAME1,FNAME2,EVENT) returns a CALL index struct from
-%     data in the SRZ file pair (FNAME1, FNAME2) referenced in EVENT struct
+% CALL = az_split_event(FNAME1,FNAME2,EVENT) returns a CALL index struct
+%       from data in the SRZ file pair (FNAME1, FNAME2) referenced in
+%       EVENT struct
+% CALL = az_split_event(FNAME1,FNAME2,EVENT,ARRAY) uses the channel
+%       mapping in ARRAY to eliminate dead channels from analysis
 %
 % The function returns a new Mx1 structure, CALLS, with identical fields
 %     as EVENT.  Long events (100ms or greater) are split into multiple
@@ -24,13 +27,26 @@ fprintf('\n***********************************************\n')
 
 % set default parameters
 BLOCKSIZE = 23666;              % process blocks of 100ms maximum
-OVERLAP = floor(BLOCKSIZE*0.5); % use 10% overlap to avoid cutting off calls
+OVERLAP = floor(BLOCKSIZE*0.1); % use overlap to avoid cutting off calls
 
 gamma = 1e-2;                   % normalized threshold for amplitude detection
-nPad = 100;                     % number of samples to pad around detected calls
+nCh = 5;                        % number of channels required for threshold
+nPad = 200;                     % number of samples to pad around detected calls
+DEBUG = true;
 
-%% don't modify parameters below this line
-cNum = 0;       % init detected call counter
+% init parameters
+array = [];
+cNum = 0;                       % detected call counter
+
+% handle optional inputs
+switch nargin
+    case 4
+        array = varargin{1};
+    case 3
+    otherwise
+        error('Incorrect number of parameters entered')
+end
+
 call = struct('s0',{},'s1',{},'t0',{},'t1',{},'cNum',{},'eNum',{}); % init empty struct (populated later)
 assert(OVERLAP/BLOCKSIZE <= 0.5,'OVERLAP should be between 0% and 50%')
 
@@ -63,14 +79,19 @@ for eNum = 1:numel(event)
 
     %% iterate over each separated block
     for bNum = 1:numel(block)
+        
         B = block(bNum);
         idx1 = (B.s0(1):B.s1(1));
         idx2 = (B.s0(2):B.s1(2));
 
         % index data channels in sequential order for each board
-        chNum = array.ch + 112*(array.bd-1); % get shuffle order
-        %%% try doing this using array.ch and array.bd values
-        %%% i.e. sort, read_SRZ, unsort
+        if isempty(array)
+            chNum = 1:224;
+        else
+            %%% try doing this using array.ch and array.bd values
+            %%% i.e. sort, read_SRZ, unsort
+            chNum = array.ch + 112*(array.bd-1);    % get shuffle order
+        end
         ch1 = 1:112;
         ch2 = 1:112;
 
@@ -94,7 +115,7 @@ for eNum = 1:numel(event)
         end
 
         res = [res1 res2];                  % combine data from each board
-        ts.data = zeros(size(res,1), length(array.ch));         % init data struct
+        ts.data = zeros(size(res,1), length(chNum));         % init data struct
 
         %%%%
         % reshuffle 
@@ -113,35 +134,44 @@ for eNum = 1:numel(event)
         [x,y] = find(energy > gamma);        % search for threshold crossings
         energy = sparse(x,y,1);              % convert to sparse matrix
         energy = sum(energy,2);                   % sum threshold crossings over all channels
-        eIdx = find(energy > 10);               % detect calls if 10 or more signals coincide
+        eIdx = find(energy > nCh);               % detect calls if 10 or more signals coincide
 
+        if DEBUG
+            fprintf('.')
+            figure(1)
+            plot(energy)
+            title(sprintf('Block %d of %d',bNum,numel(block)))
+            drawnow
+        end
+        
         % if no detections found, continue to next block
         if isempty(eIdx)
             continue
         end
 
         % find start/stop samples (+/- padding) for one or multiple calls
-        s0 = [eIdx(1) find(diff(eIdx) > 472)] - nPad;
-        s1 = [find(diff(eIdx) > 472) eIdx(end)] + nPad;
+        s0 = [eIdx(1) eIdx(1+find(diff(eIdx) > 472))] - nPad;
+        s1 = [eIdx(find(diff(eIdx) > 472)) eIdx(end)] + nPad;
 
         % if call overlaps the start or end of a block, ignore and move to next overlapping block
-        if (s0 < 1) && (bNum > 1)
+        if any((s0 < 1) & (bNum > 1))
             warning('call starts before block')
             continue
         end
-        if (s1 > size(energy,1))
+        if any(s1 > size(energy,1))
             warning('call ends after block')
             continue
         end
+        %%% REMOVE REDUNDANT CALLS HERE %%%
 
         % append call struct with detected call(s)
         %[call(end+1:end+numel(s0))] = deal(struct('s0',[0 0],'s1',[0 0],'t0',[0 0],'t1',[0 0]));
         for c=1:numel(s0)
             cNum = cNum + 1;
-            C.s0 = B.s0 + s0 - 1;
-            C.s1 = B.s0 + s1 - 1;
-            C.t0 = E.t0 + (s0 ./ ts.fs);
-            C.t1 = E.t0 + (s1 ./ ts.fs);
+            C.s0 = B.s0 + s0(c) - 1;
+            C.s1 = B.s0 + s1(c) - 1;
+            C.t0 = E.t0 + (C.s0 ./ ts.fs);
+            C.t1 = E.t0 + (C.s1 ./ ts.fs);
             C.cNum = cNum;
             C.eNum = eNum;
             
@@ -149,7 +179,8 @@ for eNum = 1:numel(event)
             call(end+1) = C;
         end
     end
-    
+    fprintf('   Found %d calls in event %d\n',numel(call),eNum)
+
     % clear memory after each event is processed
     clear block
 end
