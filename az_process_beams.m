@@ -4,7 +4,7 @@ function varargout = az_process_beams(varargin)
 % az_process_beams(fname1,fname2) detects all events in the files and saves
 %     event map to a MAT file in the current directory
 % az_process_beams(fname1,fname2,EVENTS) only plots the events in the
-%     specified array
+%     specified array; use 'Inf' to process all events
 % az_process_beams(fname1,fname2,EVENTS,beamfile) writes beam data to the
 %     specified filename
 %
@@ -182,7 +182,7 @@ for eNum = eIdx
     try
 
     % look for multiple calls in each event; if found, iterate over each one
-    calls = az_split_event(fname1,fname2,events(eNum),array);
+    [calls,ts] = az_split_event(fname1,fname2,events(eNum),array,[prefix '_calls']);
     
     % iterate over each call in event
     for m = 1:numel(calls)

@@ -1,4 +1,4 @@
-function [call] = az_split_event(fname1,fname2,event,varargin)
+function [call, ts] = az_split_event(fname1,fname2,event,varargin)
 % AZ_SPLIT_EVENT searches raw binary data for one or more calls in each event
 %
 % CALL = az_split_event(FNAME1,FNAME2,EVENT) returns a CALL index struct
@@ -6,6 +6,8 @@ function [call] = az_split_event(fname1,fname2,event,varargin)
 %       EVENT struct
 % CALL = az_split_event(FNAME1,FNAME2,EVENT,ARRAY) uses the channel
 %       mapping in ARRAY to eliminate dead channels from analysis
+% CALL = az_split_event(...,CALLFILE) entering a string as the last
+%       parameter will save the resulting call struct to CALLFILE
 %
 % The function returns a new Mx1 structure, CALLS, with identical fields
 %     as EVENT.  Long events (100ms or greater) are split into multiple
@@ -32,16 +34,25 @@ OVERLAP = floor(BLOCKSIZE*0.1); % use overlap to avoid cutting off calls
 gamma = 1e-2;                   % normalized threshold for amplitude detection
 nCh = 5;                        % number of channels required for threshold
 nPad = 200;                     % number of samples to pad around detected calls
-DEBUG = true;
+DEBUG = false;
 
 % init parameters
 array = [];
 cNum = 0;                       % detected call counter
+callfile = [];
 
 % handle optional inputs
 switch nargin
-    case 4
+    case 5
         array = varargin{1};
+        callfile = varargin{2};
+    case 4
+        res = varargin{1};
+        if ischar(res)
+            callfile = res;
+        else
+            array = res;
+        end
     case 3
     otherwise
         error('Incorrect number of parameters entered')
@@ -111,7 +122,7 @@ for eNum = 1:numel(event)
             else
                 res2(N1+1:end,:) = [];
             end
-            warning('AZ_SPLIT_EVENT:trunc','Data lengths unequal - truncating %d samples',abs(N1-N2))
+            warning('AZ_SPLIT_EVENT:trunc','Data lengths unequal in block %d - truncating %d samples',bNum,abs(N1-N2))
         end
 
         res = [res1 res2];                  % combine data from each board
@@ -155,14 +166,14 @@ for eNum = 1:numel(event)
 
         % if call overlaps the start or end of a block, ignore and move to next overlapping block
         if any((s0 < 1) & (bNum > 1))
-            warning('call starts before block')
+            warning('AZ_SPLIT_EVENT:startblock','call starts before block %d',bNum)
             continue
         end
         if any(s1 > size(energy,1))
-            warning('call ends after block')
+            warning('AZ_SPLIT_EVENT:endblock','call ends after block %d',bNum)
             continue
         end
-        %%% REMOVE REDUNDANT CALLS HERE %%%
+        %%% TBD - REMOVE REDUNDANT CALLS HERE %%%
 
         % append call struct with detected call(s)
         %[call(end+1:end+numel(s0))] = deal(struct('s0',[0 0],'s1',[0 0],'t0',[0 0],'t1',[0 0]));
@@ -183,4 +194,11 @@ for eNum = 1:numel(event)
 
     % clear memory after each event is processed
     clear block
+end
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% save results to file
+if ~isempty(callfile)
+    fprintf('\nSaving event index to "%s"...\n',callfile)
+    save(callfile,'call');
 end
