@@ -101,7 +101,9 @@ for eNum = 1:numel(event)
         else
             %%% try doing this using array.ch and array.bd values
             %%% i.e. sort, read_SRZ, unsort
-            chNum = array.ch + 112*(array.bd-1);    % get shuffle order
+            chIdx = array.ch + 112*(array.bd-1);    % get shuffle order
+            %[chNum,chIdx2] = sort(chIdx); %% NEED TO VERIFY SHUFFLE ORDER
+            %GETS MAINTAINED SO WE CAN REVERSE IT!
         end
         ch1 = 1:112;
         ch2 = 1:112;

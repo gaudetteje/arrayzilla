@@ -21,9 +21,9 @@ end
 % plotting flags
 PLOT0 = 0;          % time series of detected calls
 PLOT1 = 0;          % plot array channel positions
-PLOT2 = 0;          % spectrogram for each raw call
+PLOT2 = 1;          % spectrogram for each raw call
 PLOT3 = 0;          % 3D representation of array and source location
-PLOT4 = 0;          % spectrogram for each filtered call
+PLOT4 = 1;          % spectrogram for each filtered call
 PLOT5 = 0;          % 3D beam surface/contour plot for each call
 
 % force (re)detection of events - if true, overwrites existing events
@@ -38,7 +38,7 @@ PLOTMODE = 'surf';
 %PLOTMODE = 'horz';
 %PLOTMODE = 'vert';
 
-EVENTNUM = [];       % don't process events unless entered, only detect them and save events
+EVENTNUM = Inf;       % process all events unless specified otherwise
 
 
 % prompt for filename if not entered
@@ -120,8 +120,9 @@ end
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Detect trigger events in data files and return index
 prefix = regexp(fname1,'[_\-\ ]');      % use current filename
-eventfile = [fname1(1:prefix(end)) 'events.mat'];
-hdrfile = [fname1(1:prefix(end)) 'hdr.mat'];
+prefix = fname1(1:prefix(end));
+eventfile = [prefix 'events.mat'];
+hdrfile = [prefix 'hdr.mat'];
 if exist(eventfile,'file') && ~FORCEDET
     fprintf('Loading events from file...')
     load(eventfile,'events');                               % load data file, if exists
@@ -164,16 +165,15 @@ N = length(eIdx);
 
 beam = cell(N,1);
 
-ref = {};%struct();
-% [ref(1:N).eNum] = deal([]);
-% [ref(1:N).t0] = deal([]);
-% [ref(1:N).t1] = deal([]);
-% [ref(1:N).tlen] = deal([]);
-% [ref(1:N).ch] = deal([]);
-% [ref(1:N).data] = deal([]);
-% [ref(1:N).fs] = deal([]);
-% [ref(1:N).done] = deal(false);
-% [ref(1:N).error] = deal([]);
+[ref(1:N).eNum] = deal([]);
+[ref(1:N).t0] = deal([]);
+[ref(1:N).t1] = deal([]);
+[ref(1:N).tlen] = deal([]);
+[ref(1:N).ch] = deal([]);
+[ref(1:N).data] = deal([]);
+[ref(1:N).fs] = deal([]);
+[ref(1:N).done] = deal(false);
+[ref(1:N).error] = deal([]);
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% iterate over each event
@@ -182,7 +182,8 @@ for eNum = eIdx
     try
 
     % look for multiple calls in each event; if found, iterate over each one
-    [calls,ts] = az_split_event(fname1,fname2,events(eNum),array,[prefix '_calls']);
+    callfile = sprintf('%scalls_%d',prefix, eNum);
+    calls = az_split_event(fname1,fname2,events(eNum),array,callfile);
     
     % iterate over each call in event
     for m = 1:numel(calls)
