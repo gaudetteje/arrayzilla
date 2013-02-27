@@ -1,45 +1,34 @@
 function varargout = az_process_beams(varargin)
 % AZ_PROCESS_BEAMS  analyze Arrayzilla data files and construct beams
 %
-% az_process_beams(fname1,fname2) detects all events in the files and saves
-%     event map to a MAT file in the current directory
-% az_process_beams(fname1,fname2,EVENTS) only plots the events in the
-%     specified array; use 'Inf' to process all events
-% az_process_beams(fname1,fname2,EVENTS,beamfile) writes beam data to the
-%     specified filename
+% BEAM = az_process_beams(FNAME1,FNAME2,EVENT) processes the events in the
+%     specified struct and returns the BEAM pattern data for each event
+%
+% [BEAM,SOURCE,REF,ARRAY,FREQ] = az_process_beams(...) optionally returns
+%     the specified additional processing results
+%
+% [..] = az_process_beams(FNAME1,FNAME2,EVENTS,BEAMFILE) writes beam data
+%     to the specified filename, BEAMFILE
 %
 
 warning('OFF','CALC_SPECTRUM:fs');
 warning('OFF','CALC_SPECTRUM:dc');
 warning('OFF','AZ_CHANINDEX:badchannel');
 
-if ~exist('TDOA_frame','file')
-    cLoc = fileparts(mfilename('fullpath'));
-    addpath(fullfile(cLoc,'primary_analysis'));
-end
+% if ~exist('TDOA_frame','file')
+%     cLoc = fileparts(mfilename('fullpath'));
+%     addpath(fullfile(cLoc,'primary_analysis'));
+% end
 
 % plotting flags
-PLOT0 = 0;          % time series of detected calls
 PLOT1 = 0;          % plot array channel positions
 PLOT2 = 1;          % spectrogram for each raw call
 PLOT3 = 0;          % 3D representation of array and source location
 PLOT4 = 1;          % spectrogram for each filtered call
 PLOT5 = 0;          % 3D beam surface/contour plot for each call
 
-% force (re)detection of events - if true, overwrites existing events
-FORCEDET = false;
-
 % filter mode - if true, applies time-frequency filtering around each harmonic
 FILTMODE = false;
-
-% default beam plot style
-PLOTMODE = 'surf';
-%PLOTMODE = 'cont';
-%PLOTMODE = 'horz';
-%PLOTMODE = 'vert';
-
-EVENTNUM = Inf;       % process all events unless specified otherwise
-
 
 % prompt for filename if not entered
 switch nargin
@@ -84,33 +73,8 @@ switch nargin
         fname1 = varargin{1};
         fname2 = varargin{2};
         
-        % take specified event numbers
-        EVENTNUM = varargin{3};
-        
-    case 4
-        % assign file names
-        fname1 = varargin{1};
-        fname2 = varargin{2};
-        
-        % take specified event numbers
-        EVENTNUM = varargin{3};
-        
         % specify beam file to write
-        beamfile = varargin{4};
-        
-    case 5
-        % assign file names
-        fname1 = varargin{1};
-        fname2 = varargin{2};
-        
-        % take specified event numbers
-        EVENTNUM = varargin{3};
-        
-        % specify beam file to write
-        beamfile = varargin{4};
-        
-        % optional plotting parameters
-        FORCEDET = varargin{5};
+        beamfile = varargin{3};
         
     otherwise
         error('Bad number of input parameters.  Better luck next time!');
@@ -130,20 +94,6 @@ if exist(eventfile,'file') && ~FORCEDET
 else
     events = az_detect_events(fname1,fname2,eventfile,hdrfile);    % detect trigger events in data header fields
 end
-
-% get event index
-if EVENTNUM == Inf
-    eIdx = 1:length(events);    % assign events index
-else
-    eIdx = EVENTNUM;              % otherwise use default
-    if isempty(eIdx)
-        return              % terminate if no events to process
-    end
-end
-
-% plot time series data on several channels
-if PLOT0; plotTimeSeries(fname1, fname2, events(eIdx)); drawnow; end
-
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Define physical array parameters
@@ -177,22 +127,22 @@ beam = cell(N,1);
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% iterate over each event
-cNum = 0;      % initialize number of calls detected in all events
+%cNum = 0;      % initialize number of calls detected in all events
 for eNum = eIdx
     try
 
-    % look for multiple calls in each event; if found, iterate over each one
-    callfile = sprintf('%scalls_%d',prefix, eNum);
-    calls = az_split_event(fname1,fname2,events(eNum),array,callfile);
+%    % look for multiple calls in each event; if found, iterate over each one
+%    callfile = sprintf('%scalls_%d',prefix, eNum);
+%    calls = az_split_event(fname1,fname2,events(eNum),array,callfile);
     
-    % iterate over each call in event
-    for m = 1:numel(calls)
-        cNum = cNum + 1;
-        
-        if numel(calls) > 1
-            fprintf('\n********************************\n')
-            fprintf('*** Processing call %d of %d ***\n\n',m,numel(calls))
-        end
+%     % iterate over each call in event
+%     for m = 1:numel(calls)
+%         cNum = cNum + 1;
+%         
+%         if numel(calls) > 1
+%             fprintf('\n********************************\n')
+%             fprintf('*** Processing call %d of %d ***\n\n',m,numel(calls))
+%         end
 
         %% Convert raw recorded digital data to voltage units
         ts = az_convert(fname1,fname2,calls(m),array);
@@ -220,8 +170,8 @@ for eNum = eIdx
         %% Interpolate beam data
         beam{cNum} = az_calcbeam(fd(cNum), array, source(cNum));%, 'pos', 'nearest');
 
-        if PLOT5; plotBeamPattern(beam{cNum},60e3,PLOTMODE); pause; end
-    end
+%        if PLOT5; plotBeamPattern(beam{cNum},60e3,PLOTMODE); pause; end
+%    end
     
     fprintf('\n***************************************\n')
     fprintf('*** Completed processing event %.3d ***\n',eNum)

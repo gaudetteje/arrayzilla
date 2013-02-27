@@ -113,7 +113,7 @@ function hdr = read_header(fname)
     hdr.clock = res(:,2);   % Mx1 uint32
     hdr.gain = res(:,3);    % 1x1 uint8
     hdr.fs = res(:,4);      % 1x1 double
-    hdr.aux = res(:,5);    % Mx1 double
+    hdr.aux = res(:,5);     % Mx1 double
     
     % unwrap clock cycles if overflow occurred
     k = find(diff(hdr.clock) < 1); k = [k; length(hdr.clock)];

@@ -91,7 +91,7 @@ for eNum = 1:numel(event)
 
 
     %% iterate over each separated block
-    for bNum = 19:numel(block)
+    for bNum = 1:numel(block)
         if numel(block) > 1
             fprintf('%s%.3d',char([8 8 8]),bNum);
         end
@@ -169,11 +169,13 @@ for eNum = 1:numel(event)
         
         % if call overlaps the start or end of a block, ignore and move to next overlapping block
         if any((s0 < 1) & (bNum > 1))
-            warning('AZ_SPLIT_EVENT:startblock','call starts before block %d',bNum)
+            warning('AZ_SPLIT_EVENT:startblock','call %d starts before block %d',cNum+1,bNum)
+            fprintf('Processing block number    ')
             continue
         end
         if any(s1 > size(energy,1))
-            warning('AZ_SPLIT_EVENT:endblock','call ends after block %d',bNum)
+            warning('AZ_SPLIT_EVENT:endblock','call ends after block %d',cNum+1,bNum)
+            fprintf('Processing block number    ')
             continue
         end
         
