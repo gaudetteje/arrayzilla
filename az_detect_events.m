@@ -1,16 +1,15 @@
-function [events, hdr] = az_detect(fname1,fname2,varargin)
+function [events, hdr] = az_detect_events(fname1,fname2,varargin)
 % AZ_DETECT takes the raw binary recorder files and detects discontinuous
 % events due to either trigger events, multiple recordings, or data corruption
 %
-% events = az_detect(fname1,fname2)  returns a 1xM struct holding the
-%     start/stop sample numbers and times for M triggered events
-% [events, hdr] = az_detect(fname1,fname2) also returns the header field
-%     information for both files
-% events = az_detect(fname1,fname2,'eventfile')  saves events struct to the
-%     file 'eventfile.mat'.
-% events = az_detect(fname1,fname2,'eventfile','hdrfile')  also saves the
-%     header field information for all samples in 'hdrfile.mat'.
-
+% events = az_detect_events(fname1,fname2)  returns a 1xM struct holding
+%     the start/stop sample numbers and times for M triggered events
+% [events, hdr] = az_detect_events(fname1,fname2) also returns the header
+%     field information for both files
+% events = az_detect_events(fname1,fname2,'eventfile')  saves events struct
+%     to the file 'eventfile.mat'.
+% events = az_detect_events(fname1,fname2,'eventfile','hdrfile')  also
+%     saves the header field information for all samples in 'hdrfile.mat'.
 
 fprintf('\n\n***********************************************\n')
 fprintf('Detecting triggered events in data files\n')
@@ -22,8 +21,6 @@ if ~exist(fname2,'file')
     error('AZ_DETECT:fnf', 'Could not locate file "%s"', fname2)
 end
 
-
-eventfile = [];
 hdrfile = [];
 switch nargin
     case 2

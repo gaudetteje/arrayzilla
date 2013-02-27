@@ -1,8 +1,11 @@
 function plotTimeSeries(fname1,fname2,events)
-% PLOTTIMESERIES  plots time series data from entire recording
+% PLOTTIMESERIES  plots time series data from each recorded event
 %
-% plotTimeSeries(FNAME1,FNAME2,EVENTMAP) plots the raw time series data for
-% each call contained in EVENTMAP
+% plotTimeSeries(FNAME1,FNAME2,EVENT) plots the raw time series data for
+% each call contained in the EVENT struct
+%
+% Only 5 channels are plotted by default.  One from the center and each
+% corner.
 
 N = numel(events);            % total number of events
 ch1 = [72 1 110];

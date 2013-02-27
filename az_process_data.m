@@ -63,7 +63,7 @@ for n = 1:numel(idx1)
         load(eventfile,'events');
     else
         fprintf('Callmap not found.  Parsing data now...')
-        [events,hdr] = az_detect(fname1,fname2);
+        [events,hdr] = az_detect_events(fname1,fname2);
         fprintf('\nSaving event index to "%s"...\n\n',eventfile)
         save(eventfile,'events');
         save(hdrfile,'hdr');

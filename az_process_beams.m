@@ -128,7 +128,7 @@ if exist(eventfile,'file') && ~FORCEDET
     load(eventfile,'events');                               % load data file, if exists
     fprintf(' Done\n')
 else
-    events = az_detect(fname1,fname2,eventfile,hdrfile);    % detect trigger events in data header fields
+    events = az_detect_events(fname1,fname2,eventfile,hdrfile);    % detect trigger events in data header fields
 end
 
 % get event index

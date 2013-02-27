@@ -89,7 +89,7 @@ if exist(callmap,'file') && ~FORCEDET
     fprintf('\nCall index file already exists!  Loading call data in "%s"...\n\n',callmap);
     load(callmap,'callmap');
 else
-    callmap = az_detect(fname1,fname2);
+    callmap = az_detect_events(fname1,fname2);
     fprintf('\nSaving call index to "%s"...\n\n',callmap)
     save(callmap,'callmap');
 end
