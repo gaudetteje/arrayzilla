@@ -1,38 +1,72 @@
-function [events, hdr] = az_detect_events(fname1,fname2,varargin)
+function [event, hdr] = az_detect_events(varargin)
 % AZ_DETECT takes the raw binary recorder files and detects discontinuous
 % events due to either trigger events, multiple recordings, or data corruption
 %
-% events = az_detect_events(fname1,fname2)  returns a 1xM struct holding
+% event = az_detect_events(FNAME1,FNAME2) returns a 1xM struct holding
 %     the start/stop sample numbers and times for M triggered events
-% [events, hdr] = az_detect_events(fname1,fname2) also returns the header
-%     field information for both files
-% events = az_detect_events(fname1,fname2,'eventfile')  saves events struct
-%     to the file 'eventfile.mat'.
-% events = az_detect_events(fname1,fname2,'eventfile','hdrfile')  also
-%     saves the header field information for all samples in 'hdrfile.mat'.
+%
+% event = az_detect_events(PREFIX) uses the string PREFIX to specify the
+%     SRZ file pair
+%
+% [event, hdr] = az_detect_events(..) also returns the header field
+%     information for both files
+%
+% event = az_detect_events(FNAME1,FNAME2,'eventfile') saves event struct
+%     to the file 'eventfile.mat'
+%
+% event = az_detect_events(FNAME1,FNAME2,'eventfile','hdrfile') also
+%     saves the header field information for all samples in 'hdrfile.mat'
+%
 
 fprintf('\n\n***********************************************\n')
 fprintf('Detecting triggered events in data files\n')
 
-if ~exist(fname1,'file')
-    error('AZ_DETECT:fnf', 'Could not locate file "%s"', fname1)
-end
-if ~exist(fname2,'file')
-    error('AZ_DETECT:fnf', 'Could not locate file "%s"', fname2)
-end
-
-hdrfile = [];
 switch nargin
+    case 1
+        prefix = varargin{1};
+        if ~strcmp(prefix(end),'_')
+            prefix(end+1) = '_';
+        end
+        fname1 = [prefix 'side1.srz'];
+        fname2 = [prefix 'side2.srz'];
     case 2
-        prefix = regexp(fname1,'[_\-\ ]');      % use current filename
-        eventfile = [fname1(1:prefix(end)) 'events.mat'];
+        fname1 = varargin{1};
+        fname2 = varargin{2};
     case 3
-        eventfile = varargin{1};
+        fname1 = varargin{1};
+        fname2 = varargin{2};
+        eventfile = varargin{3};
     case 4
-        eventfile = varargin{1};
-        hdrfile = varargin{2};
+        fname1 = varargin{1};
+        fname2 = varargin{2};
+        eventfile = varargin{3};
+        hdrfile = varargin{4};
     otherwise
         error('Incorrect number of input parameters')
+end
+
+% get filename prefix from current filename
+if ~exist('prefix','var')
+    prefix = regexp(fname1,'[_\-\ ]');
+    prefix = fname1(1:prefix(end));
+end
+
+% assign eventfile name if not specified
+if ~exist('eventfile','var')
+    eventfile = [prefix 'event.mat'];
+end
+
+% assign hdrfile name if not specified
+if ~exist('hdrfile','var')
+    hdrfile = [prefix 'hdr.mat'];
+end
+
+% verify files exist
+if ~exist(fname1,'file')
+    error('AZ_DETECT_EVENTS:fnf', 'Could not locate file "%s"', fname1)
+end
+if ~exist(fname2,'file')
+    error('AZ_DETECT_EVENTS:fnf', 'Could not locate file "%s"', fname2)
 end
 
 
@@ -70,23 +104,19 @@ end
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % assign event samples and times to struct
-events(1:max(N)) = struct('s0',[0 0],'s1',[0 0],'t0',[0 0],'t1',[0 0]);
-for k=1:max(N)
-    events(k).eNum = k;     % assign an event number for reference
-    
-    if (k < numel(hdr(1).event))
-        events(k).s0(1) = hdr(1).event(idx(1,k));
-        events(k).s1(1) = hdr(1).event(idx(1,k)+1)-1;
-        events(k).t0(1) = hdr(1).time(events(k).s0(1));
-        events(k).t1(1) = hdr(1).time(events(k).s1(1));
+event(1:max(N)) = struct('s0',[0 0],'s1',[0 0],'t0',[0 0],'t1',[0 0]);
+for n=1:max(N)
+    event(n).eNum = n;     % assign an event number for reference
+
+    % repeat for each side
+    for m=1:2
+        if (n < numel(hdr(m).event))
+            event(n).s0(m) = hdr(m).event(idx(m,n));
+            event(n).s1(m) = hdr(m).event(idx(m,n)+1)-1;
+            event(n).t0(m) = hdr(m).time(event(n).s0(m));
+            event(n).t1(m) = hdr(m).time(event(n).s1(m));
+        end
     end
-    if (k < numel(hdr(2).event))
-        events(k).s0(2) = hdr(2).event(idx(2,k));
-        events(k).s1(2) = hdr(2).event(idx(2,k)+1)-1;
-        events(k).t0(2) = hdr(2).time(events(k).s0(2));
-        events(k).t1(2) = hdr(2).time(events(k).s1(2));
-    end
-    
 end
 
 
@@ -94,7 +124,7 @@ end
 % save results to file
 if ~isempty(eventfile)
     fprintf('\nSaving event index to "%s"...\n',eventfile)
-    save(eventfile,'events');
+    save(eventfile,'event');
 end
 if ~isempty(hdrfile)
     fprintf('Saving header information to "%s"...\n',hdrfile)

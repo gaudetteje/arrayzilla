@@ -13,9 +13,7 @@ ref.data = real(ts.data(:,ts.refch));     % save reference time series data
 ref.fs = ts.fs;
 
 
-
 %fprintf('Extracting call parameters from frequency domain data\n')
-
 
 
 %fprintf('Extracting call parameters from processed beam data\n')

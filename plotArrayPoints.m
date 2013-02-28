@@ -1,13 +1,52 @@
-function plotArrayPoints(a,src)
+function plotArrayPoints(a,varargin)
 % PLOTARRAYPOINTS  plots a 3D diagram showing the planar array sampling
 %   points and the angular coordinates they map to.
 %
 % plotArrayPoints(ARRAY,SOURCE) plots array geometry and mapped angular
-% coordinates relative to the sound source
+%   coordinates relative to the sound source
+%
+% plotArrayPoints(ARRAY) can be used when no source information is
+%   available.  In this case, the source is assumed to be at 1 meter normal
+%   to the center of the array
+%
+% plotArrayPoints(..,true) will generate a video circumventing the array
+%
+% plotArrayPoints(..,true,VIDNAME) saves the video to the specified name
 
 close all
 GENMOVIE = false;
 avifile = 'rotate_array_points.avi';
+
+switch(nargin)
+    case 1
+    case 2
+        if islogical(varargin{1})
+            GENMOVIE = varargin{1};
+        else
+            src = varargin{1};
+        end
+    case 3
+        if islogical(varargin{1})
+            GENMOVIE = varargin{1};
+            avifile = varargin{2};
+        else
+            src = varargin{1};
+            GENMOVIE = varargin{2};
+        end
+    case 4
+        src = varargin{1};
+        GENMOVIE = varargin{2};
+        avifile = varargin{3};
+    otherwise
+        error('Incorrect number of parameters entered')
+end
+
+% if no source specified, force origin to 1 meter normal to center of array
+if ~exist('src','var')
+    src.xSrc = (max(a.xPos)-min(a.xPos))/2;
+    src.ySrc = (max(a.yPos)-min(a.yPos))/2;
+    src.zSrc = 1;
+end
 
 % assume the following spacing and dimensions if not specified
 if ~isfield(a,'dx')
@@ -88,25 +127,23 @@ if GENMOVIE
     vidobj.Quality = 25;
     
     open(vidobj);
-end
 
-% iterate over each view
-N = 200;
-az0 = linspace(-90,-270,N);
-el0 = [linspace(90,0,N/2) zeros(1,N/2)];
-for n = 1:N
-    view(az0(n),el0(n))
-    pause(.001)
-    if GENMOVIE
-        % capture and add frame
-        drawnow
-        F = getframe(fh);
-        writeVideo(vidobj,F);
+    % iterate over each view
+    N = 200;
+    az0 = linspace(-90,-270,N);
+    el0 = [linspace(90,0,N/2) zeros(1,N/2)];
+    for n = 1:N
+        view(az0(n),el0(n))
+        pause(.001)
+        if GENMOVIE
+            % capture and add frame
+            drawnow
+            F = getframe(fh);
+            writeVideo(vidobj,F);
+        end
     end
-end
 
-% clean up
-if GENMOVIE
+    % clean up
     close(fh)
     close(vidobj)
 end

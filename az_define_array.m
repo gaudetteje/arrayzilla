@@ -1,28 +1,46 @@
-function a = az_channelmap(a,varargin)
-% AZ_CHANNELMAP  maps array coordinates to data channels in digital
-% recorder files
+function array = az_define_array(varargin)
+% AZ_DEFINE_ARRAY  defines array coordinates and board/channel mapping
+% that corresponds to data channels in the SRZ raw recorder files
 %
-% A = az_channelmap(A) takes in a struct, A, containing coordinate fields
-%   'xPos' and 'yPos' generated from az_positions and appends 'bd', 'ch',
-%   'badCh1', and 'badCh2' to the struct.
-% A = az_channelmap(A,true) also plots the 2D microphone positions in array
-%   coordinates with Z axis corresponding to channel number for
-%   identification
+% ARRAY = az_channelmap() returns a struct, ARRAY, containing coordinates
+%     'xPos' and 'yPos' along with the board and channel mappings, 'bd'
+%     and 'ch'.  Known bad channels are explicitly excluded from the
+%     struct, but listed in the fields 'badCh1' and 'badCh2'.
+%
+% ARRAY = az_channelmap(FNAME) saves the array struct definition to the
+%     file, FNAME
+%
+% ARRAY = az_channelmap(..,true) plots the 2D microphone positions in
+%     array coordinates with the Z axis corresponding to channel number
+%     for identification
 %
 % Note:  Channel and board numbers are hard coded values and must be
-% updated manually if array configuration is ever changed.
+%        updated manually if array configuration is ever changed.
 
-% optional parameters
+
+arrayfile = [];
 PLOTFLAG = false;
-if nargin > 1
-    PLOTFLAG = varargin{1};
+switch nargin
+    case 0
+    case 1
+        if ischar(varargin{1})
+            arrayfile = varargin{1};
+        else
+            PLOTFLAG = varargin{1};
+        end
+    case 2
+        arrayfile = varargin{1};
+        PLOTFLAG = varargin{2};
 end
 
+% first, define array spacing and grid
+array = az_positions([19 12],[4 5]*.0254,[9/8 9/10]);
+
 % bump in first column of sensors to match hardware
-a.xPos(a.xPos < 0) = 0.0127;
+array.xPos(array.xPos < 0) = 0.0127;
 
 % Assign each coordinate to channel number in recorded data (use 0 for no connection)
-a.bd = [0 ones(1,9) 2*ones(1,8) 0 ...
+array.bd = [0 ones(1,9) 2*ones(1,8) 0 ...
         ones(1,10) 2*ones(1,9) ...
         ones(1,10) 2*ones(1,9) ...
         ones(1,10) 2*ones(1,9) ...
@@ -34,9 +52,9 @@ a.bd = [0 ones(1,9) 2*ones(1,8) 0 ...
         ones(1,9) 2*ones(1,10) ...
         ones(1,9) 2*ones(1,10) ...
         0 ones(1,8) 2*ones(1,9) 0];
-%surf(a.xPos(1:19), a.yPos(1:19:end), reshape(a.bd,19,12)');   % for sanity check
+%surf(array.xPos(1:19), array.yPos(1:19:end), reshape(array.bd,19,12)');   % for sanity check
 
-a.ch = [  0 110  27  55  83 111  28  56  84 112  86  58  30   2  85  57  29   1   0 ...
+array.ch = [  0 110  27  55  83 111  28  56  84 112  86  58  30   2  85  57  29   1   0 ...
          52  80 108  25  53  81 109  26  54  82  87  59  31   3  88  60  32   4  89 ...
         105  22  50  78 106  23  51  79 107  24  61  33   5  90  62  34   6  91  63 ...
          47  75 103  20  48  76 104  21  49  77  35   7  92  64  36   8  93  65  37 ...
@@ -49,7 +67,7 @@ a.ch = [  0 110  27  55  83 111  28  56  84 112  86  58  30   2  85  57  29   1 
           3  31  59  87   4  32  60  88   5  80  52  24 109  81  53  25 110  82  54 ...
           0   1  29  57  85   2  30  58  86  26 111  83  55  27 112  84  56  28   0 ...
         ];
-%reshape(a.ch,19,12)';      % for sanity check
+%reshape(array.ch,19,12)';      % for sanity check
 
 % placeholders for corner elements
 idx = [1 19 210 228];
@@ -63,22 +81,28 @@ badCh1 = [badCh1 27 29 55 58 80 83 105 110 111]; %18 44 92 95];
 badCh2 = [badCh2 1 2 8 18 25 28 29 53 56 57 80 88 84 85];% 20 18 93 80 13 107 25 53 28 77];% 82 23 108 40 41 13 98]; % 88 93 37];%2 8 9 13 36 40 82 96 102];
 
 % locate matching channel numbers
-idx = [idx az_chanindex([badCh1 badCh2], [ones(size(badCh1)) 2*ones(size(badCh2))], a)];
+idx = [idx az_chanindex([badCh1 badCh2], [ones(size(badCh1)) 2*ones(size(badCh2))], array)];
 
 % remove offending channels from array structure
-a.xPos(idx) = [];
-a.yPos(idx) = [];
-a.bd(idx) = [];
-a.ch(idx) = [];
+array.xPos(idx) = [];
+array.yPos(idx) = [];
+array.bd(idx) = [];
+array.ch(idx) = [];
 
 % save channel numbers that were removed
-a.badCh1 = badCh1;
-a.badCh2 = badCh2;
+array.badCh1 = badCh1;
+array.badCh2 = badCh2;
+
+% save results to file
+if ~isempty(arrayfile)
+    fprintf('Saving array definition to "%s"...\n',arrayfile)
+    save(arrayfile,'array');
+end
 
 % plot results
 if PLOTFLAG
     figure
-    plot3(a.xPos,a.yPos,a.ch,'r.');
+    plot3(array.xPos,array.yPos,array.ch,'r.');
     title('Microphone positions for Arrayzilla')
     xlabel('X position (m)')
     ylabel('Y position (m)')
@@ -88,10 +112,10 @@ if PLOTFLAG
 
     plot(0,0,'k+')            % origin of absolute array
     axis equal
-    dx = max(0, max(diff(sort(a.xPos))));
-    dy = max(0, max(diff(sort(a.yPos))));
-    axis([min(a.xPos - dx/2) max(a.xPos + dx/2) ...
-          min(a.yPos - dy/2) max(a.yPos + dy/2)])
+    dx = max(0, max(diff(sort(array.xPos))));
+    dy = max(0, max(diff(sort(array.yPos))));
+    axis([min(array.xPos - dx/2) max(array.xPos + dx/2) ...
+          min(array.yPos - dy/2) max(array.yPos + dy/2)])
     
     drawnow
 end

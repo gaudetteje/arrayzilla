@@ -1,13 +1,19 @@
-function [call, ts] = az_split_event(fname1,fname2,event,varargin)
+function [call, ts] = az_split_event(varargin)
 % AZ_SPLIT_EVENT searches raw binary data for one or more calls in each event
 %
 % CALL = az_split_event(FNAME1,FNAME2,EVENT) returns a CALL index struct
 %       from data in the SRZ file pair (FNAME1, FNAME2) referenced in
 %       EVENT struct
+%
+% CALL = az_split_event(PREFIX,EVENT) uses the string PREFIX to specify the
+%       SRZ file pair
+%
 % CALL = az_split_event(FNAME1,FNAME2,EVENT,ARRAY) uses the channel
 %       mapping in ARRAY to eliminate dead channels from analysis
+%
 % CALL = az_split_event(...,CALLFILE) entering a string as the last
 %       parameter will save the resulting call struct to CALLFILE
+%
 % [CALL,ARRAY] = az_split_event(...) also returns the ARRAY struct with a
 %       list of detected bad channels
 %
@@ -21,9 +27,7 @@ function [call, ts] = az_split_event(fname1,fname2,event,varargin)
 %     using az_positions and az_channelmap.
 
 % TODO:
-% This is the first time we actually read data from the array channels
-% - detect bad channels using sum(E,1) to look across time
-% - iterate over each data block to detect ALL calls, not just first block
+% - detect bad channels using sum(E,1) to look across time; return list
 
 fprintf('\n***********************************************\n')
 
@@ -38,29 +42,86 @@ DEBUG = false;
 
 % init parameters
 array = [];
-callfile = [];
 cNum = 0;                       % counter for number of detected calls
+
+% verify hard coded parameters set properly
+assert(OVERLAP/BLOCKSIZE <= 0.5,'OVERLAP should be between 0% and 50%')
+assert(2*nPad < OVERLAP,'OVERLAP must be greater than 2*nPad or calls may be missed')
 
 % handle optional inputs
 switch nargin
-    case 5
-        array = varargin{1};
-        callfile = varargin{2};
+    case 2
+        prefix = varargin{1};
+        event = varargin{2};
+        if ~strcmp(prefix(end),'_')
+            prefix(end+1) = '_';
+        end
+        fname1 = [prefix 'side1.srz'];
+        fname2 = [prefix 'side2.srz'];
+    case 3
+        fname1 = varargin{1};
+        fname2 = varargin{2};
+        event = varargin{3};
     case 4
-        res = varargin{1};
+        fname1 = varargin{1};
+        fname2 = varargin{2};
+        event = varargin{3};
+        res = varargin{4};
         if ischar(res)
             callfile = res;
         else
             array = res;
         end
-    case 3
+    case 5
+        fname1 = varargin{1};
+        fname2 = varargin{2};
+        event = varargin{3};
+        array = varargin{4};
+        callfile = varargin{5};
     otherwise
         error('Incorrect number of parameters entered')
 end
 
-call = struct('s0',{},'s1',{},'t0',{},'t1',{},'cNum',{},'eNum',{}); % init empty struct (populated later)
-assert(OVERLAP/BLOCKSIZE <= 0.5,'OVERLAP should be between 0% and 50%')
-assert(2*nPad < OVERLAP,'OVERLAP must be greater than 2*nPad or calls may be missed')
+% get filename prefix from current filename
+if ~exist('prefix','var')
+    prefix = regexp(fname1,'[_\-\ ]');
+    prefix = fname1(1:prefix(end));
+end
+
+% assign callfile name if not specified
+if ~exist('callfile','var')
+    callfile = [prefix 'call.mat'];
+end
+
+% verify files exist
+if ~exist(fname1,'file')
+    error('AZ_SPLIT_EVENT:fnf', 'Could not locate file "%s"', fname1)
+end
+if ~exist(fname2,'file')
+    error('AZ_SPLIT_EVENT:fnf', 'Could not locate file "%s"', fname2)
+end
+
+
+%% load a valid event struct from file if a filename was entered
+if ischar(event)
+    try
+        load(event,'event')
+    catch
+        error('Event file not found:  "%s"',event)
+    end
+end
+
+% verify event is a structure and has appropriate fields
+if ~exist('event','var') || ~isstruct(event)
+    error('Event file "%s" does not contain "event" struct!',event)
+end
+fields = fieldnames(event);
+if ~all(ismember({'s0','s1','t0','t1','eNum'},fields))
+    error('event struct does not contain the appropriate fields')
+end
+
+
+call = struct('s0',{},'s1',{},'t0',{},'t1',{},'cNum',{},'eNum',{});
 
 
 %% iterate over each event
@@ -134,11 +195,6 @@ for eNum = 1:numel(event)
         ts.data = zeros(size(res));     % init data struct
         ts.data(:,chIdx) = res;         % reverse channel sort order
         clear res*                      % free memory chunk
-        
-%        for n=1:length(chNum)
-%            %fprintf('ts.data(:,%d) = res(:,%d) [Ch %d, Bd %d]\n',n,chIdx(n),array.ch(n),array.bd(n))
-%            ts.data(:,n) = res(:,chNum(n));
-%        end
         
         % remove DC offset
         ts.data = ts.data - ones(size(ts.data,1),1)*mean(ts.data);

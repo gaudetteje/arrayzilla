@@ -1,24 +1,31 @@
 function varargout = az_process_beams(varargin)
-% AZ_PROCESS_BEAMS  analyze Arrayzilla data files and construct beams
+% AZ_PROCESS_BEAMS  analyze recorded data files and reconstruct beams
 %
-% az_process_beams(FNAME1,FNAME2,EVENT) processes the events in the
-%     specified struct and returns the BEAM pattern data for each event
+% az_process_beams(FNAME1,FNAME2,EVENT,ARRAY) processes the events in the
+%     specified struct, EVENT, and returns the BEAM pattern data for each
+%     event.  ARRAY is the struct defining array coordinates and data
+%     channel mapping.
 %
-% az_process_beams(PREFIX,EVENT) uses the string PREFIX for SRZ file names
+% az_process_beams(PREFIX,EVENT,ARRAY) uses the string PREFIX for
+%     specifying the pair of SRZ file names
 %
 % [BEAM,SOURCE,REF,ARRAY,FREQ] = az_process_beams(...) optionally returns
 %     the specified processing results
 %
-% [..] = az_process_beams(FNAME1,FNAME2,EVENT,BEAMFILE) writes beam data
+% [..] = az_process_beams(FNAME1,FNAME2,EVENT,ARRAY,BEAMFILE) writes beam data
 %     to the specified filename, BEAMFILE
 %
-% EVENT can be a struct from either az_detect_events or az_split_event
+% Notes:
+%     EVENT can be a struct from either az_detect_events or az_split_event
+%     ARRAY is a struct from az_define_array
+%     If not specified, BEAMFILE, will default to [PREFIX '_beams.mat']
+%
 
 warning('OFF','CALC_SPECTRUM:fs');
 warning('OFF','CALC_SPECTRUM:dc');
 warning('OFF','AZ_CHANINDEX:badchannel');
 
-% plotting flags
+% plotting flags for debug
 PLOT1 = 0;          % plot array channel positions
 PLOT2 = 0;          % spectrogram for each raw call
 PLOT3 = 0;          % 3D representation of array and source location
@@ -29,24 +36,27 @@ PLOT5 = 0;          % 3D beam surface/contour plot for each call
 FILTMODE = false;
 
 switch nargin
-    case 2
+    case 3
         prefix = varargin{1};
         event = varargin{2};
-        
+        array = varargin{3};
         fname1 = [prefix '_side1.srz'];
         fname2 = [prefix '_side2.srz'];
-    case 3
-        fname1 = varargin{1};
-        fname2 = varargin{2};
-        event = varargin{3};
     case 4
         fname1 = varargin{1};
         fname2 = varargin{2};
         event = varargin{3};
-        
-        % specify beam file to write
-        beamfile = varargin{4};
-        
+        array = varargin{4};
+    case 5
+        fname1 = varargin{1};
+        fname2 = varargin{2};
+        event = varargin{3};
+        array = varargin{4};
+        beamfile = varargin{5};
+        [pname,fname,ext] = fileparts(beamfile);
+        if ~strcmp(ext,'.mat')
+            beamfile = fullfile(pname,[fname '.mat']);
+        end
     otherwise
         error('Bad number of input parameters.  Better luck next time!');
 end
@@ -59,12 +69,12 @@ end
 
 % assign beamfile name if not specified
 if ~exist('beamfile','var')
-    beamfile = [prefix 'beam'];
+    beamfile = [prefix 'beam.mat'];
 end
 
 % load data file, if it exists
 if ischar(event)
-    if exist(eventfile,'file')
+    if exist('eventfile','file')
         fprintf('Loading events from file...')
         load(eventfile,'event');
     else
@@ -72,12 +82,6 @@ if ischar(event)
     end
 end
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%% Define physical array parameters
-array = az_positions([19 12],[4 5]*.0254,[9/8 9/10]);
-
-% assign channel/board mapping to array struct
-array = az_channelmap(array,PLOT1);     % MOVE BAD CHANNEL SPECIFICATION, DETECTION & REDUCTION TO LATER
 
 %% preallocate structs
 N = numel(event);
@@ -106,22 +110,22 @@ beam = cell(N,1);
 %% iterate over each event
 for eNum = 1:N
     try
-
+    
     % Convert raw recorded digital data to voltage units
     ts = az_convert(fname1,fname2,event(eNum),array);
     if PLOT2; plotSpecArray(array,ts); end
-
+    
     % Localize point sources in 3D space
     source(eNum) = az_localize(ts, array, PLOT3);
-
+    
     % Realign data, separate harmonic components, and filter to remove echoes and reverb
     ts = az_filter(ts, source(eNum), array, FILTMODE);
-
+    
     % Equalize microphone responses using calibration data
     %ts = az_equalize(ts);
 
     % Correct data for transmission losses on each channel
-    ts = az_armaloss(ts, source(eNum).rng);
+    %ts = az_armaloss(ts, source(eNum).rng);
     if PLOT4; plotSpecArray(array,ts); end
 
     % estimate bulk parameters
@@ -161,7 +165,7 @@ if exist(beamfile,'file')
 end
 
 % save to beamfile
-save(beamfile,'beam','ref','source','array');
+save(beamfile,'beam','ref','source');
 fprintf('Saving beam data to %s\n',beamfile);
 
 

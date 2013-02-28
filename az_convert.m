@@ -1,8 +1,8 @@
 function ts = az_convert(fname1,fname2,call,array)
 % AZ_CONVERT reads data from the raw binary files into a MATLAB structure
 %
-% TS = az_convert(FNAME1,FNAME2,CALLMAP,ARRAY) retrieves the data in the
-% SRZ file pair (FNAME1, FNAME2) using the CALLMAP structure.  Channel
+% TS = az_convert(FNAME1,FNAME2,EVENT,ARRAY) retrieves the data in the
+% SRZ file pair (FNAME1, FNAME2) using the EVENT structure.  Channel
 % numbers are mapped to array indices and coordinates using the ARRAY
 % struct.
 %
