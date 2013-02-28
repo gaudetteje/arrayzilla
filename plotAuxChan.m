@@ -19,11 +19,8 @@ switch nargin
         error('Incorrect number of parameters entered')
 end
 
-N = numel(events);                  % total number of events
+N = numel(events);              % total number of events
 M = max(events(end).s1);        % upper bound on number of events
-%M = [events.s1]-[events.s0]+1;
-%M1 = sum(M(1:2:end));
-%M2 = sum(M(2:2:end));               % total number of samples
 
 % read data from file if necessary
 if ~exist('hdr','var')
@@ -40,16 +37,10 @@ if ~exist('hdr','var')
         idx2 = (events(n).s0(2) : events(n).s1(2));
         hdr(2).aux(idx2) = read_SRZ_header_field(fname2,idx2,9);
         hdr(2).time(idx2) = linspace(events(n).t0(2), events(n).t1(2), numel(idx2));
-        
     end
 end
 
-% init indices
-data1 = cell(N,1);
-data2 = cell(N,1);
-t1 = cell(N,1);
-t2 = cell(N,1);
-
+% plot results
 figure
 hold on;
 

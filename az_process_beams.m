@@ -1,98 +1,75 @@
 function varargout = az_process_beams(varargin)
 % AZ_PROCESS_BEAMS  analyze Arrayzilla data files and construct beams
 %
-% BEAM = az_process_beams(FNAME1,FNAME2,EVENT) processes the events in the
+% az_process_beams(FNAME1,FNAME2,EVENT) processes the events in the
 %     specified struct and returns the BEAM pattern data for each event
 %
-% [BEAM,SOURCE,REF,ARRAY,FREQ] = az_process_beams(...) optionally returns
-%     the specified additional processing results
+% az_process_beams(PREFIX,EVENT) uses the string PREFIX for SRZ file names
 %
-% [..] = az_process_beams(FNAME1,FNAME2,EVENTS,BEAMFILE) writes beam data
+% [BEAM,SOURCE,REF,ARRAY,FREQ] = az_process_beams(...) optionally returns
+%     the specified processing results
+%
+% [..] = az_process_beams(FNAME1,FNAME2,EVENT,BEAMFILE) writes beam data
 %     to the specified filename, BEAMFILE
 %
+% EVENT can be a struct from either az_detect_events or az_split_event
 
 warning('OFF','CALC_SPECTRUM:fs');
 warning('OFF','CALC_SPECTRUM:dc');
 warning('OFF','AZ_CHANINDEX:badchannel');
 
-% if ~exist('TDOA_frame','file')
-%     cLoc = fileparts(mfilename('fullpath'));
-%     addpath(fullfile(cLoc,'primary_analysis'));
-% end
-
 % plotting flags
 PLOT1 = 0;          % plot array channel positions
-PLOT2 = 1;          % spectrogram for each raw call
+PLOT2 = 0;          % spectrogram for each raw call
 PLOT3 = 0;          % 3D representation of array and source location
-PLOT4 = 1;          % spectrogram for each filtered call
+PLOT4 = 0;          % spectrogram for each filtered call
 PLOT5 = 0;          % 3D beam surface/contour plot for each call
 
 % filter mode - if true, applies time-frequency filtering around each harmonic
 FILTMODE = false;
 
-% prompt for filename if not entered
 switch nargin
-    case {0,1}
-        % take first parameter as eventnum if it's numeric
-        if nargin == 1 && isnumeric(varargin{1})
-            EVENTNUM = varargin{1};
-        % take first parameter as FORCEDET if boolean
-        elseif nargin == 1 && islogical(varargin{1})
-            FORCEDET = varargin{1};
-        end
-        
-        % prompt user for data file
-        [fname, pname] = uigetfile( { ...
-            '*.srz','Recorder Data (*.srz)'; ...
-            '*.*',  'All Files (*.*)'}, ...
-            'Select Side 1 data file', ...
-            'MultiSelect', 'on');
-        
-        if iscell(fname) && length(fname) == 2
-            % assign 2nd filename if multiple selected
-            fname1 = fullfile(pname,fname{1});
-            fname2 = fullfile(pname,fname{2});
-        else
-            % otherwise get 2nd file name
-            fname1 = fullfile(pname,fname);
-            [fname, pname] = uigetfile( { ...
-                '*.srz','Recorder Data (*.srz)'; ...
-                '*.*',  'All Files (*.*)'}, ...
-                'Select Side 1 data file');
-            fname2 = fullfile(pname,fname);
-        end
-        clear fname pname
-        
     case 2
-        % assign filenames
-        fname1 = varargin{1};
-        fname2 = varargin{2};
+        prefix = varargin{1};
+        event = varargin{2};
         
+        fname1 = [prefix '_side1.srz'];
+        fname2 = [prefix '_side2.srz'];
     case 3
-        % assign file names
         fname1 = varargin{1};
         fname2 = varargin{2};
+        event = varargin{3};
+    case 4
+        fname1 = varargin{1};
+        fname2 = varargin{2};
+        event = varargin{3};
         
         % specify beam file to write
-        beamfile = varargin{3};
+        beamfile = varargin{4};
         
     otherwise
         error('Bad number of input parameters.  Better luck next time!');
 end
 
+% get filename prefix from current filename
+if ~exist('prefix','var')
+    prefix = regexp(fname1,'[_\-\ ]');
+    prefix = fname1(1:prefix(end));
+end
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%% Detect trigger events in data files and return index
-prefix = regexp(fname1,'[_\-\ ]');      % use current filename
-prefix = fname1(1:prefix(end));
-eventfile = [prefix 'events.mat'];
-hdrfile = [prefix 'hdr.mat'];
-if exist(eventfile,'file') && ~FORCEDET
-    fprintf('Loading events from file...')
-    load(eventfile,'events');                               % load data file, if exists
-    fprintf(' Done\n')
-else
-    events = az_detect_events(fname1,fname2,eventfile,hdrfile);    % detect trigger events in data header fields
+% assign beamfile name if not specified
+if ~exist('beamfile','var')
+    beamfile = [prefix 'beam'];
+end
+
+% load data file, if it exists
+if ischar(event)
+    if exist(eventfile,'file')
+        fprintf('Loading events from file...')
+        load(eventfile,'event');
+    else
+        error('Event file not found: %s',event)
+    end
 end
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -103,7 +80,7 @@ array = az_positions([19 12],[4 5]*.0254,[9/8 9/10]);
 array = az_channelmap(array,PLOT1);     % MOVE BAD CHANNEL SPECIFICATION, DETECTION & REDUCTION TO LATER
 
 %% preallocate structs
-N = length(eIdx);
+N = numel(event);
 
 [source(1:N).xSrc] = deal([]);
 [source(1:N).ySrc] = deal([]);
@@ -127,60 +104,44 @@ beam = cell(N,1);
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% iterate over each event
-%cNum = 0;      % initialize number of calls detected in all events
-for eNum = eIdx
+for eNum = 1:N
     try
 
-%    % look for multiple calls in each event; if found, iterate over each one
-%    callfile = sprintf('%scalls_%d',prefix, eNum);
-%    calls = az_split_event(fname1,fname2,events(eNum),array,callfile);
+    % Convert raw recorded digital data to voltage units
+    ts = az_convert(fname1,fname2,event(eNum),array);
+    if PLOT2; plotSpecArray(array,ts); end
+
+    % Localize point sources in 3D space
+    source(eNum) = az_localize(ts, array, PLOT3);
+
+    % Realign data, separate harmonic components, and filter to remove echoes and reverb
+    ts = az_filter(ts, source(eNum), array, FILTMODE);
+
+    % Equalize microphone responses using calibration data
+    %ts = az_equalize(ts);
+
+    % Correct data for transmission losses on each channel
+    ts = az_armaloss(ts, source(eNum).rng);
+    if PLOT4; plotSpecArray(array,ts); end
+
+    % estimate bulk parameters
+    ref(eNum) = az_estimate_params(ts,event(eNum));
+
+    % Analyze frequency-content of each channel
+    fd(eNum) = az_analysis(ts);
+
+    % Interpolate beam data
+    beam{eNum} = az_calcbeam(fd(eNum), array, source(eNum));%, 'pos', 'nearest');
+    if PLOT5; plotBeamPattern(beam{eNum},60e3,PLOTMODE); pause; end
     
-%     % iterate over each call in event
-%     for m = 1:numel(calls)
-%         cNum = cNum + 1;
-%         
-%         if numel(calls) > 1
-%             fprintf('\n********************************\n')
-%             fprintf('*** Processing call %d of %d ***\n\n',m,numel(calls))
-%         end
-
-        %% Convert raw recorded digital data to voltage units
-        ts = az_convert(fname1,fname2,calls(m),array);
-        if PLOT2; plotSpecArray(array,ts); end
-
-        %% Localize point sources in 3D space
-        source(cNum) = az_localize(ts, array, PLOT3);
-
-        %% Realign data, separate harmonic components, and filter to remove echoes and reverb
-        ts = az_filter(ts, source(cNum), array, FILTMODE);
-
-        %% Equalize microphone responses using calibration data
-        %ts = az_equalize(ts);
-
-        %% Correct data for transmission losses on each channel
-        ts = az_armaloss(ts, source(cNum).rng);
-        if PLOT4; plotSpecArray(array,ts); end
-
-        %% estimate bulk parameters
-        ref{cNum} = az_estimate_params(ts,calls(m));
-
-        %% Analyze frequency-content of each channel
-        fd(cNum) = az_analysis(ts);
-
-        %% Interpolate beam data
-        beam{cNum} = az_calcbeam(fd(cNum), array, source(cNum));%, 'pos', 'nearest');
-
-%        if PLOT5; plotBeamPattern(beam{cNum},60e3,PLOTMODE); pause; end
-%    end
-    
-    fprintf('\n***************************************\n')
+    fprintf('\n\n**************************************\n')
     fprintf('*** Completed processing event %.3d ***\n',eNum)
-    fprintf('***************************************\n\n')
-    ref{cNum}.done = true;             % set done flag
+    fprintf('**************************************\n\n')
+    ref(eNum).done = true;             % set done flag
 
-    %% If problem arises, issue error message and move to next event
+    % If problem arises, issue error message and move to next event
     catch ME
-        ref{cNum}.error = ME;
+        ref(eNum).error = ME;
         disp(getReport(ME));
         fprintf('#######################################\n');
         fprintf('#####  Failed to process event %d  #####\n',eNum);
@@ -188,11 +149,6 @@ for eNum = eIdx
     end
 end
 
-
-% save data
-if ~exist('beamfile','var')
-    beamfile = [fname1(1:prefix(end)) 'beams.mat'];
-end
 
 % write data to new file, if already exists
 if exist(beamfile,'file')
