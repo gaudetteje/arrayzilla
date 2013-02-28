@@ -103,6 +103,7 @@ for eNum = 1:numel(event)
         % index data channels in sequential order for each board
         if isempty(array)
             chNum = 1:224;
+            chIdx = chNum;
         else
             ch = array.ch + 112*(array.bd-1);   % get shuffle order
             [chNum,chIdx] = sort(ch);           % sort, but retain order

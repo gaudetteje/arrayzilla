@@ -20,33 +20,27 @@ switch nargin
 end
 
 N = numel(events);                  % total number of events
-M = [events.s1]-[events.s0]+1;
-M1 = sum(M(1:2:end));
-M2 = sum(M(2:2:end));  % total number of samples
+M = max(events(end).s1);        % upper bound on number of events
+%M = [events.s1]-[events.s0]+1;
+%M1 = sum(M(1:2:end));
+%M2 = sum(M(2:2:end));               % total number of samples
 
 % read data from file if necessary
 if ~exist('hdr','var')
     % prealloc struct
-    hdr(1).aux = zeros(1,M1);
-    hdr(1).time = zeros(1,M1);
-    hdr(2).aux = zeros(1,M2);
-    hdr(2).time = zeros(1,M2);
+    [hdr(1:2).aux] = deal(zeros(1,M));
+    [hdr(1:2).time] = deal(zeros(1,M));
     
     % iterate over each event
-    m1 = 1;      % init offset pointer
-    m2 = 1;
     for n = 1:N
         idx1 = (events(n).s0(1) : events(n).s1(1));
-        hdr(1).aux(m1:m1+numel(idx1)-1) = read_SRZ_header_field(fname1,idx1,9);
-        hdr(1).time(m1:m1+numel(idx1)-1) = linspace(events(n).t0(1), events(n).t1(1), numel(idx1));
+        hdr(1).aux(idx1) = read_SRZ_header_field(fname1,idx1,9);
+        hdr(1).time(idx1) = linspace(events(n).t0(1), events(n).t1(1), numel(idx1));
         
         idx2 = (events(n).s0(2) : events(n).s1(2));
-        hdr(2).aux(m2:m2+numel(idx2)-1) = read_SRZ_header_field(fname2,idx2,9);
-        hdr(2).time(m2:m2+numel(idx2)-1) = linspace(events(n).t0(2), events(n).t1(2), numel(idx2));
+        hdr(2).aux(idx2) = read_SRZ_header_field(fname2,idx2,9);
+        hdr(2).time(idx2) = linspace(events(n).t0(2), events(n).t1(2), numel(idx2));
         
-        % update pointer
-        m1 = m1 + numel(idx1);
-        m2 = m2 + numel(idx2);
     end
 end
 
