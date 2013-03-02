@@ -125,7 +125,7 @@ for eNum = 1:N
     %ts = az_equalize(ts);
 
     % Correct data for transmission losses on each channel
-    %ts = az_armaloss(ts, source(eNum).rng);
+    ts = az_armaloss(ts, source(eNum).rng);
     if PLOT4; plotSpecArray(array,ts); end
 
     % estimate bulk parameters

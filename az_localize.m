@@ -9,6 +9,7 @@ fprintf('\n***********************************************\n')
 fprintf('Localizing sound sources and calculating angles\n')
 
 DEBUG = false;
+VERBOSE = false;
 
 % optional inputs
 PLOTFLAG = false;
@@ -83,21 +84,22 @@ src.el = src.el*180/pi;             % convert to degrees
 azRes = diff(src.az); azRes(azRes <= 0) = [];
 elRes = diff(src.el); elRes(elRes <= 0) = [];
 
-fprintf('\nBeam Coverage:\n')
-fprintf('Min. / Max. Horizontal Angle\n')
-fprintf('   %g / %g degrees\n', [min(src.az) max(src.az)]);
-fprintf('Min. / Max. Vertical Angle\n')
-fprintf('   %g / %g degrees\n\n', [min(src.el) max(src.el)]);
+if VERBOSE
+    fprintf('\nBeam Coverage:\n')
+    fprintf('Min. / Max. Horizontal Angle\n')
+    fprintf('   %g / %g degrees\n', [min(src.az) max(src.az)]);
+    fprintf('Min. / Max. Vertical Angle\n')
+    fprintf('   %g / %g degrees\n\n', [min(src.el) max(src.el)]);
 
-fprintf('Beam Resolution:\n')
-fprintf('Min. / Max. Horizontal Resolution\n')
-fprintf('   %g / %g degrees\n', [min(azRes) max(azRes)]);
-fprintf('Min. / Max. Vertical Resolution\n')
-fprintf('   %g / %g degrees\n\n', [min(elRes) max(elRes)]);
+    fprintf('Beam Resolution:\n')
+    fprintf('Min. / Max. Horizontal Resolution\n')
+    fprintf('   %g / %g degrees\n', [min(azRes) max(azRes)]);
+    fprintf('Min. / Max. Vertical Resolution\n')
+    fprintf('   %g / %g degrees\n\n', [min(elRes) max(elRes)]);
 
-fprintf('Minimum / Maximum Euclidean Distance\n')
-fprintf('  %g / %g meters\n', [min(src.rng) max(src.rng)]);
-
+    fprintf('Minimum / Maximum Euclidean Distance\n')
+    fprintf('  %g / %g meters\n', [min(src.rng) max(src.rng)]);
+end
 
 % plot spatial representation with source locations (Note: Y and Z are reversed to simplify 3d rotation)
 if PLOTFLAG

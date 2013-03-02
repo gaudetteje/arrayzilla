@@ -1,10 +1,11 @@
 function az_process_data(varargin)
-% AZ_PROCESS_DATA  processes beam data and generates audio/video files for
-% each trial found in the raw SRZ data sets
+% AZ_PROCESS_DATA  processes beam data and generates audio/video files
 %
 % az_process_data - prompts user for a folder.  All SRZ files located in
-% the directory or subdirectories will be processed if a matching side1/2 
-% pair is found
+%   the directory or subdirectories will be processed if a matching side1
+%   and side2 pair is found
+%
+% az_process_data(PATHNAME) searches through the path specified
 
 
 % start logging text session
@@ -18,7 +19,8 @@ DEBUG = false;
 
 f = [30e3 60e3 90e3];       % frequencies to plot
 
-% prompt user for working directory
+
+%% prompt user for working directory
 if ~nargin
     wDir = uigetdir('Select a data directory');
 else
@@ -36,10 +38,11 @@ if isempty(idx1)
     fprintf('No data files found.  Aborting...\n\n')
 end
 
+
 %% iterate over each pair of files (side 1 and 2)
-for n = 1:numel(idx1)
+for m = 1:numel(idx1)
     % find prefix of filename
-    [pname, fname, ext] = fileparts(fnames{idx1(n)});
+    [pname, fname, ext] = fileparts(fnames{idx1(m)});
     sLoc = regexpi(fname,'\_');
     prefix = fname(1:sLoc(end)-1);
     
@@ -56,17 +59,32 @@ for n = 1:numel(idx1)
     end
     
     %% load event map, if exists, otherwise create
-    eventfile = fullfile(pname, sprintf('%s_events.mat',prefix));
-    hdrfile = fullfile(pname, sprintf('%s_hdr.mat',prefix));
-    if existfile(eventfile)
-        fprintf('Loading precomputed event structure...\n')
-        load(eventfile,'events');
+    arrayfile = fullfile(pname, [prefix '_array.mat']);
+    if existfile(arrayfile)
+        fprintf('Loading array definition...\n')
+        load(arrayfile,'array')
     else
-        fprintf('Callmap not found.  Parsing data now...')
-        [events,hdr] = az_detect_events(fname1,fname2);
-        fprintf('\nSaving event index to "%s"...\n\n',eventfile)
-        save(eventfile,'events');
-        save(hdrfile,'hdr');
+        fprintf('Defining array structure\n')
+        array = az_define_array(arrayfile);
+    end
+    
+    %% load event map, if exists, otherwise create
+    eventfile = fullfile(pname, [prefix '_event.mat']);
+    hdrfile = fullfile(pname, [prefix '_hdr.mat']);
+    if ~existfile(eventfile)
+        fprintf('Detecting events...\n')
+        event = az_detect_events(fname1,fname2,eventfile,hdrfile);
+    end
+
+    callfile = fullfile(pname, [prefix '_call.mat']);
+    if existfile(callfile)
+        fprintf('Loading precomputed call structure...\n')
+        load(callfile,'call');
+    else
+        fprintf('Loading precomputed event structure...\n')
+        load(eventfile,'event');
+        fprintf('Call map not found.  Parsing data now...')
+        call = az_split_event(fname1,fname2,event,array,callfile);
     end
     
     %% separate data set into trials from event map
@@ -76,7 +94,7 @@ for n = 1:numel(idx1)
 %    t = t(diff(t) > 50);                    % remove trials with less than 50 pulses
 %     t = [1 t numel(events)+1];             % add first and last events
 
-    t = [1 numel(events)+1];   % process entire file as one trial
+    t = [1 numel(call)+1];   % process entire file as one trial
     
     %% iterate over each trial
     tic
@@ -87,14 +105,14 @@ for n = 1:numel(idx1)
         try
             % show time series for each event
             if DEBUG
-                plotTimeSeries(fname1,fname2,events(t(n):t(n+1)-1))
+                plotTimeSeries(fname1,fname2,call)
                 drawnow
             end
 
             % process beam data
             beamfile = fullfile(pname, sprintf('%s_beams_%d-%d.mat',prefix,t(n),t(n+1)-1));
             if ~existfile(beamfile)
-                [beam, ref] = az_process_beams(fname1,fname2,t(n):t(n+1)-1,beamfile);
+                [beam, ref] = az_process_beams(fname1,fname2,call,array,beamfile);
             else
                 load(beamfile)
             end
@@ -109,6 +127,7 @@ for n = 1:numel(idx1)
             for m = 1:numel(f)
                 aviname = fullfile(pname, sprintf('%s_%dkHz_call_%d-%d.avi',prefix,round(f(m)*1e-3),t(n),t(n+1)-1)) ;
                 if ~existfile(aviname)
+                    pause(5)    % mbp has trouble keeping up
                     genVideoTrack(beam, ref, aviname, f(m));
                 end
             end

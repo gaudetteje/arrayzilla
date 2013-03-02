@@ -2,15 +2,15 @@ function array = az_define_array(varargin)
 % AZ_DEFINE_ARRAY  defines array coordinates and board/channel mapping
 % that corresponds to data channels in the SRZ raw recorder files
 %
-% ARRAY = az_channelmap() returns a struct, ARRAY, containing coordinates
+% ARRAY = az_define_array() returns a struct, ARRAY, containing coordinates
 %     'xPos' and 'yPos' along with the board and channel mappings, 'bd'
 %     and 'ch'.  Known bad channels are explicitly excluded from the
 %     struct, but listed in the fields 'badCh1' and 'badCh2'.
 %
-% ARRAY = az_channelmap(FNAME) saves the array struct definition to the
+% ARRAY = az_define_array(FNAME) saves the array struct definition to the
 %     file, FNAME
 %
-% ARRAY = az_channelmap(..,true) plots the 2D microphone positions in
+% ARRAY = az_define_array(..,true) plots the 2D microphone positions in
 %     array coordinates with the Z axis corresponding to channel number
 %     for identification
 %
