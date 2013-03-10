@@ -32,8 +32,11 @@ PLOT3 = 0;          % 3D representation of array and source location
 PLOT4 = 0;          % spectrogram for each filtered call
 PLOT5 = 0;          % 3D beam surface/contour plot for each call
 
-% filter mode - if true, applies time-frequency filtering around each harmonic
-FILTMODE = false;
+% optional processing modes - useful for bypassing lengthy steps if debugging
+LOCMODE = false;    % localize sound source using TDOA, if true
+FILTMODE = false;   % apply time-frequency filtering of each harmonic, if true
+EQMODE = false;     % apply microphone calibration equalizer, if true
+TLMODE = false;     % apply transmission loss correction, if true
 
 switch nargin
     case 3
@@ -116,16 +119,24 @@ for eNum = 1:N
     if PLOT2; plotSpecArray(array,ts); end
     
     % Localize point sources in 3D space
-    source(eNum) = az_localize(ts, array, PLOT3);
+    source(eNum) = az_localize(array, ts, PLOT3, LOCMODE);
     
     % Realign data, separate harmonic components, and filter to remove echoes and reverb
     ts = az_filter(ts, source(eNum), array, FILTMODE);
     
     % Equalize microphone responses using calibration data
-    %ts = az_equalize(ts);
+    if EQMODE
+        ts = az_equalize(ts);
+    else
+        warning('AZ_PROCESS_BEAMS:eqmode','Bypassed microphone equilization')
+    end
 
     % Correct data for transmission losses on each channel
-    ts = az_armaloss(ts, source(eNum).rng);
+    if TLMODE
+        ts = az_armaloss(ts, source(eNum).rng);
+    else
+        warning('AZ_PROCESS_BEAMS:tlmode','Bypassed transmission loss correction')
+    end
     if PLOT4; plotSpecArray(array,ts); end
 
     % estimate bulk parameters

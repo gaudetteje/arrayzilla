@@ -1,20 +1,38 @@
-function src = az_localize(ts, a, varargin)
+function src = az_localize(a, ts, varargin)
 % AZ_LOCALIZE  localize sound source for a single pulse and map array
 % coordinates to angular map (az/el)
 %
-% Note:  The (0,0,Z) vector is normal to the array plane looking from the
-% point source as the origin.
+% SRC = az_localize(ARRAY,TS) uses the time series data, TS, to localize
+%   a point source given the array coordinates in the ARRAY struct
+%
+% SRC = az_localize(ARRAY,TS,true) plots the array with original and
+%   projected angular coordinates about the source origin
+%
+% SRC = az_localize(ARRAY,TS,false,false) bypasses the localization and
+%   hard codes the source position for debugging purposes
+%
+% Note:  The (0,0,Z) vector is normal to the array plane assuming the point
+%   source position is the origin.
 
 fprintf('\n***********************************************\n')
 fprintf('Localizing sound sources and calculating angles\n')
 
-DEBUG = false;
-VERBOSE = false;
+% flags
+DEBUG = false;      % generates simulated data for debugging
+LOCMODE = true;     % attempts localization of sound source using TDOA
+VERBOSE = false;    % displays lengthy information about beam resolution/swath
 
 % optional inputs
 PLOTFLAG = false;
-if nargin > 2
-    PLOTFLAG = varargin{1};
+switch nargin
+    case 2
+    case 3
+        PLOTFLAG = varargin{1};
+    case 4
+        PLOTFLAG = varargin{1};
+        LOCMODE = varargin{2};
+    otherwise
+        error('Incorrect number of parameters entered')
 end
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -54,10 +72,12 @@ if DEBUG
     coords = TDOA_frame(sim.data', micpos', sim.fs );
 
 else
-%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    %coords = TDOA_frame(ts.data(:,idx)', micpos', ts.fs);
-    coords = [0.93 0.78 1 0];
-    warning('Hard coding position due to inconsistent results')
+    if LOCMODE
+        coords = TDOA_frame(ts.data(:,idx)', micpos', ts.fs);
+    else
+        warning('AZ_LOCALIZE:tdoa','Hard coding position due to inconsistent results');
+        coords = [0.93 0.78 1 0];
+    end
 end
 
 src.xSrc = coords(1);
@@ -81,10 +101,10 @@ src.el = src.el*180/pi;             % convert to degrees
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% print calculated array parameters
-azRes = diff(src.az); azRes(azRes <= 0) = [];
-elRes = diff(src.el); elRes(elRes <= 0) = [];
-
 if VERBOSE
+    azRes = diff(src.az); azRes(azRes <= 0) = [];
+    elRes = diff(src.el); elRes(elRes <= 0) = [];
+
     fprintf('\nBeam Coverage:\n')
     fprintf('Min. / Max. Horizontal Angle\n')
     fprintf('   %g / %g degrees\n', [min(src.az) max(src.az)]);
