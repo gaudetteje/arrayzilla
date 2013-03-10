@@ -93,7 +93,7 @@ tic
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 code = uint32(hex2dec('6d726f46')); % compare "Form" with uint32 result (force into little endian)
 blockNum = 0;   % init
-fprintf('Processing %u blocks of size %d KB\n',ceil(nPackets/blockSize),blockSize*256/1024)
+fprintf('Analyzing alignment of %u blocks of size %d KB\n',ceil(nPackets/blockSize),blockSize*256/1024)
 %fprintf('  0');
 while ~feof(fid)
     
@@ -244,4 +244,4 @@ fprintf('\n')
 toc
 fclose(fid);
 
-fprintf('\nDone processing "%s"!\n\n',fname)
+fprintf('\nDone analyzing "%s"!\n\n',fname)
