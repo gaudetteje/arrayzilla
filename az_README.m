@@ -18,7 +18,7 @@
 
 %%% plotting and visualization functions
 
-% plotArrayPoints(array,source(idx)) - plots geometry of array elements and
+% plotArrayPoints(array) - plots geometry of array elements and
 % localized source position.  Angular coordinates are mapped onto a sphere
 % around the source position.
 %
