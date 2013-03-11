@@ -32,7 +32,7 @@ function [call, ts] = az_split_event(varargin)
 fprintf('\n***********************************************\n')
 
 % set default parameters
-BLOCKSIZE = 500; %23666;              % process blocks of 100ms maximum
+BLOCKSIZE = 23666;              % process blocks of 100ms maximum
 
 gamma = 1e-2;                   % normalized threshold for amplitude detection
 nCh = 5;                        % number of channels required for threshold
@@ -191,8 +191,10 @@ for eNum = 1:numel(event)
         ts.data(:,chIdx) = res;         % reverse channel sort order
         clear res*                      % free memory chunk
         
-        % remove DC offset
-        ts.data = ts.data - ones(size(ts.data,1),1)*mean(ts.data);
+        % remove DC offset / high-pass filter data
+        %ts.data = ts.data - ones(size(ts.data,1),1)*mean(ts.data);
+        [b,a] = butter(2,10e3./hdr1.fs,'high');
+        ts.data = filtfilt(b,a,ts.data);
         ts.fs = hdr1.fs;
         
         %% detect calls in data using energy
@@ -206,6 +208,11 @@ for eNum = 1:numel(event)
             figure(1)
             plot(energy)
             title(sprintf('Block %d of %d',bNum,numel(block)))
+            drawnow
+            
+            figure(2)
+            plot(ts.data)
+            title('Timeseries data')
             drawnow
         end
         
@@ -239,8 +246,8 @@ for eNum = 1:numel(event)
             C.eNum = eNum;
             
             % append call to data struct
-            if (s0 == 1)
-                cNum = cNum - 1;    % back up counter
+            if numel(call) > 0 && any(call(end).s1 >= C.s0 - 1)     % detect if part of previous call
+                cNum = cNum - 1;    % decrement counter
                 call(end).s1 = C.s1;
                 call(end).t1 = C.t1;
             else
@@ -248,6 +255,12 @@ for eNum = 1:numel(event)
             end
         end
     end
+    
+    % remove last block if caused by noise
+    if numel(call) && any(call(end).s1 >= E.s1)
+        call(end) = [];
+    end
+    
     fprintf('\n   Detected %d calls in event %d\n',numel(call),eNum)
 
     % clear memory after each event is processed
