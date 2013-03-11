@@ -123,7 +123,7 @@ for m = 1:numel(idx1)
         disp(repmat('#',1,70))
         wavname = fullfile(pname, sprintf('%s.wav',prefix));
         if ~existfile(wavname)
-            fprintf('Generating WAV audio track from reference data')
+            fprintf('Generating WAV audio track from reference data...\n')
             genAudioTrack(ref, wavname);
         else
             fprintf('WAV audio file already exists.\n')
@@ -145,6 +145,7 @@ for m = 1:numel(idx1)
         % combine beam video and audio with camera video
         disp(repmat('#',1,70))
         fprinf('Combining video and audio into single AVI movie...\n')
+        %TBD
 
         disp(repmat('#',1,70))
         fprintf('Completed processing data files with prefix "%s":\n\t%s\t%s\n',prefix,fname1,fname2)

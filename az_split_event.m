@@ -32,8 +32,7 @@ function [call, ts] = az_split_event(varargin)
 fprintf('\n***********************************************\n')
 
 % set default parameters
-BLOCKSIZE = 23666;              % process blocks of 100ms maximum
-OVERLAP = floor(BLOCKSIZE*0.1); % use overlap to avoid cutting off calls
+BLOCKSIZE = 500; %23666;              % process blocks of 100ms maximum
 
 gamma = 1e-2;                   % normalized threshold for amplitude detection
 nCh = 5;                        % number of channels required for threshold
@@ -43,10 +42,6 @@ DEBUG = false;
 % init parameters
 array = [];
 cNum = 0;                       % counter for number of detected calls
-
-% verify hard coded parameters set properly
-assert(OVERLAP/BLOCKSIZE <= 0.5,'OVERLAP should be between 0% and 50%')
-assert(2*nPad < OVERLAP,'OVERLAP must be greater than 2*nPad or calls may be missed')
 
 % handle optional inputs
 switch nargin
@@ -129,8 +124,8 @@ for eNum = 1:numel(event)
     E = event(eNum);
     
     % find starting sample for each block (if more than one)
-    blk1 = (E.s0(1) : BLOCKSIZE-OVERLAP : E.s1(1));
-    blk2 = (E.s0(2) : BLOCKSIZE-OVERLAP : E.s1(2));
+    blk1 = (E.s0(1) : BLOCKSIZE : E.s1(1));
+    blk2 = (E.s0(2) : BLOCKSIZE : E.s1(2));
     
     % split long events into multiple overlapping event blocks if block size exceeded
     [block(1:numel(blk1))] = deal(struct('s0',[0 0],'s1',[0 0]));
@@ -208,7 +203,6 @@ for eNum = 1:numel(event)
         eIdx = find(energy > nCh);               % detect calls if 10 or more signals coincide
         
         if DEBUG
-            fprintf('.')
             figure(1)
             plot(energy)
             title(sprintf('Block %d of %d',bNum,numel(block)))
@@ -224,17 +218,9 @@ for eNum = 1:numel(event)
         s0 = [eIdx(1) eIdx(1+find(diff(eIdx) > 472))] - nPad;
         s1 = [eIdx(find(diff(eIdx) > 472)) eIdx(end)] + nPad;
         
-        % if call overlaps the start or end of a block, ignore and move to next overlapping block
-        if any((s0 < 1) & (bNum > 1))
-            warning('AZ_SPLIT_EVENT:startblock','call %d starts before block %d',cNum+1,bNum)
-            fprintf('Processing block number    ')
-            continue
-        end
-        if any(s1 > size(energy,1))
-            warning('AZ_SPLIT_EVENT:endblock','call ends after block %d',cNum+1,bNum)
-            fprintf('Processing block number    ')
-            continue
-        end
+        % ensure start/stop is within block indices
+        s0 = unique(max(s0,1));
+        s1 = unique(min(s1,BLOCKSIZE));
         
         % append call struct with detected call(s)
         %[call(end+1:end+numel(s0))] = deal(struct('s0',[0 0],'s1',[0 0],'t0',[0 0],'t1',[0 0]));
@@ -243,22 +229,23 @@ for eNum = 1:numel(event)
             C.s0 = B.s0 + s0(c) - 1;
             C.s1 = B.s0 + s1(c) - 1;
             
-            % remove redundant calls (if overlapped)
-            if numel(call) && any(C.s0 == call(end).s0)
-                continue
-            end
+            % assign times using time from side 1
+            C.t0 = E.t0 + (C.s0(1) ./ ts.fs);
+            C.t1 = E.t0 + (C.s1(1) ./ ts.fs);
             
-            % assign times
-            C.t0 = E.t0 + (C.s0 ./ ts.fs);
-            C.t1 = E.t0 + (C.s1 ./ ts.fs);
-
             % assign call/event number
             cNum = cNum + 1;
             C.cNum = cNum;
             C.eNum = eNum;
             
             % append call to data struct
-            call(end+1) = C;
+            if (s0 == 1)
+                cNum = cNum - 1;    % back up counter
+                call(end).s1 = C.s1;
+                call(end).t1 = C.t1;
+            else
+                call(end+1) = C;
+            end
         end
     end
     fprintf('\n   Detected %d calls in event %d\n',numel(call),eNum)

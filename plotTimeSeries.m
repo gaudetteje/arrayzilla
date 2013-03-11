@@ -9,7 +9,7 @@ function plotTimeSeries(fname1,fname2,events)
 
 N = numel(events);            % total number of events
 ch1 = [72 1 110];
-ch2 = [49 1];
+ch2 = [70 49 1];
 
 figure
 hold on;

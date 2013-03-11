@@ -1,7 +1,26 @@
 function h = plotBeamPattern(B,varargin)
 % PLOTBEAMPATTERN  plots an individual measured 3D beam
 %
-% Beam is a struct containing the 3-dimensional array of complex beam data,
+% plotBeamPattern(BEAM) plots the beam pattern across all frequencies
+% 
+% plotBeamPattern(BEAM,FREQ) plots the beam patten at the specified
+%   frequency(s)
+%
+% plotBeamPattern(BEAM,FREQ,SRC) plots sensor locations over beam data to
+%   show where beam data is being interpolated
+% 
+% plotBeamPattern(...,PLOTMODE) optionally plots beams using a
+%   different method (see actual code for available modes)
+%
+% plotBeamPattern(...,PLOTMODE,DATAMODE) optionally plots beams using a
+%   different data set ('fft', 'hsa1', or 'hsa2')
+%
+% plotBeamPattern(...,PLOTMODE,DATAMODE,FH) forces use of FH as the figure
+%   handle
+%
+% FH = plotBeamPattern(...) also returns the figure handle, FH
+%
+% BEAM is a struct containing the 3-dimensional array of complex beam data,
 % and indices for each dimension.
 %
 % beam.FFT - i x j x k complex matrix azimuth, elevation, and frequency
@@ -16,8 +35,6 @@ function h = plotBeamPattern(B,varargin)
 % To generate X and Y use:
 % [beam.AZ, beam.EL] = meshgrid(beam.az, beam.el);
 
-fprintf('\n*****************************************\n')
-fprintf('Plotting beam pattern\n')
 
 %% set default parameters
 
@@ -43,6 +60,7 @@ colors = {'k','b','g','m','c','r'};
 
 %% optional parameters
 FREQ = [];
+SRC = [];
 PLOTMODE = 'surf'; %'cont'
 DATAMODE = 'fft'; %'hsa1'; %
 FH = nan;
@@ -52,19 +70,45 @@ switch (nargin)
         FREQ = varargin{1};
     case 3
         FREQ = varargin{1};
-        PLOTMODE = varargin{2};
+        if ischar(varargin{2})
+            PLOTMODE = varargin{2};
+        else
+            SRC = varargin{2};
+        end
     case 4
         FREQ = varargin{1};
-        PLOTMODE = varargin{2};
-        DATAMODE = varargin{3};
+        if ischar(varargin{2})
+            PLOTMODE = varargin{2};
+            DATAMODE = varargin{3};
+        else
+            SRC = varargin{2};
+            PLOTMODE = varargin{3};
+        end
     case 5
         FREQ = varargin{1};
-        PLOTMODE = varargin{2};
-        DATAMODE = varargin{3};
-        FH = varargin{4};
+        SRC = varargin{2};
+        PLOTMODE = varargin{3};
+        DATAMODE = varargin{4};
+    case 6
+        FREQ = varargin{1};
+        SRC = varargin{2};
+        PLOTMODE = varargin{3};
+        DATAMODE = varargin{4};
+        FH = varargin{5};
     otherwise
         error('Incorrect number of input arguments')
 end
+
+% repeat function call over multiple beams, if cell array of beam structs entered
+if iscell(B)
+    for bNum = 1:numel(B)
+        plotBeamPattern(B{bNum},FREQ,SRC(bNum),PLOTMODE,DATAMODE,FH);
+    end
+    return
+end    
+
+fprintf('\n*****************************************\n')
+fprintf('Plotting beam pattern\n')
 
 % use specified data set
 if strcmp(DATAMODE,'fft')
@@ -356,3 +400,12 @@ end
 
 % get current axis handle
 h = gca;
+
+
+if ~isempty(SRC)
+    if iscell(SRC)
+        warning('SRC was entered, but could not determine which index to use!')
+    else
+        plot(SRC.az,SRC.el,'.')
+    end
+end
