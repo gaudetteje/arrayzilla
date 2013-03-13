@@ -138,7 +138,7 @@ for m = 1:numel(idx1)
                 pause(5)    % mbp has trouble keeping up
                 genVideoTrack(beam, ref, aviname, fc);
             else
-                fprinf('AVI video track already exists.\n')
+                fprintf('AVI video track already exists.\n')
             end
         end
 
