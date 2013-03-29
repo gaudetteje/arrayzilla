@@ -202,7 +202,7 @@ for eNum = 1:numel(event)
         [x,y] = find(energy > gamma);        % search for threshold crossings
         energy = sparse(x,y,1);              % convert to sparse matrix
         energy = sum(energy,2);                   % sum threshold crossings over all channels
-        eIdx = find(energy > nCh);               % detect calls if 10 or more signals coincide
+        eIdx = find(energy > nCh)';               % detect calls if 10 or more signals coincide
         
         if DEBUG
             figure(1)
