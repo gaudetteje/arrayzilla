@@ -52,7 +52,7 @@ for m = 1:numel(idx1)
         % verify side2 exists
         fname1 = fullfile(pname, [prefix '_side1' ext]);
         fname2 = fullfile(pname, [prefix '_side2' ext]);
-
+        
         disp(repmat('#',1,70))
         fprintf('Processing data files with prefix "%s":\n\t%s\t%s\n\n',prefix,fname1,fname2)
 
@@ -60,15 +60,16 @@ for m = 1:numel(idx1)
             warning('AZ_PROCESS_DATA:File Not Found','No matching side2 found for "%s" in "%s"\n  *** Skipping file ***',fullfile(fname,ext),pname)
             continue
         end
-
-
+        
+        
         %% validate and realign data files as necessary
         disp(repmat('#',1,70))
-        fprintf('Verifying and realigning SRZ data files\n')
-        az_align_data(fname1,'auto');
-        az_align_data(fname2,'auto');
-
-
+        if isempty(findfiles('.','event\.mat$'))
+            fprintf('Verifying and realigning SRZ data files\n')
+            az_align_data(fname1,'auto');
+            az_align_data(fname2,'auto');
+        end
+        
         %% load array structure, if exists, otherwise create it
         disp(repmat('#',1,70))
         arrayfile = fullfile(pname, [prefix '_array.mat']);
@@ -79,8 +80,8 @@ for m = 1:numel(idx1)
             fprintf('Defining array structure\n')
             array = az_define_array(arrayfile);
         end
-
-
+        
+        
         %% load event map, if exists, otherwise create it
         disp(repmat('#',1,70))
         eventfile = fullfile(pname, [prefix '_event.mat']);

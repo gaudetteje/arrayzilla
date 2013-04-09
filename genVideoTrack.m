@@ -1,4 +1,4 @@
-function genVideoTrack(beam,cdata,avifile,varargin)
+function genVideoTrack(beam,cdata,videofile,varargin)
 % GENVIDEOTRACK  compiles beam pattern images into an AVI file
 %
 % genVideoTrack(BEAMS,CALLDATA,FILENAME) takes beam data in an Nx1 cell
@@ -12,9 +12,13 @@ function genVideoTrack(beam,cdata,avifile,varargin)
 
 close all
 
+% resolves graphics card bug in Win7
 if ispc
     opengl('software');
 end
+
+% revert to older 'avifile' function if older than 2010b
+NEWVER = checkVersion;
 
 % default parameters
 D = 5;                          % slow audio playback by factor of D
@@ -40,9 +44,13 @@ N = ceil(T2*fRate);             % total number of frames
 
 
 % initialize AVI video
-vidobj = VideoWriter(avifile);
-vidobj.FrameRate = fRate;
-open(vidobj);
+if NEWVER
+    vidobj = VideoWriter(videofile);
+    vidobj.FrameRate = fRate;
+    open(vidobj);
+else
+    vidobj = avifile(videofile);
+end
 
 % open new figure
 hFig = figure('MenuBar','none','ToolBar','none','NumberTitle','off','NextPlot','replace');
@@ -52,7 +60,7 @@ set(gcf, 'Renderer', 'zbuffer')
 cNum = 1;
 cNext = c(cNum);
 c(end+1) = N+1;                 % append after last call to avoid error
-hAxis = plotBeamPattern(beam{cNum},f,'surf','fft',hFig);
+hAxis = plotBeamPattern(beam{cNum},f,[],'surf','fft',hFig);
 hSurf = findobj(hAxis,'type','surface');
 set(hSurf,'edgealpha',0);
 set(hSurf,'facealpha',0);
@@ -67,7 +75,7 @@ for n=1:N
         
         % plot new beam on existing figure
         if ~isempty(beam{cNum})     % skip beam if empty
-            hAxis = plotBeamPattern(beam{cNum},f,'surf','fft',hFig);
+            hAxis = plotBeamPattern(beam{cNum},f,[],'surf','fft',hFig);
         %else
             % just plot previous beam for now - NEED TO FIX FAILED BEAM
             % PROCESSING!
@@ -97,10 +105,34 @@ for n=1:N
     drawnow
     
     F = getframe(hFig);
-    writeVideo(vidobj,F);
+    if NEWVER
+        writeVideo(vidobj,F);
+    else
+        vidobj = addframe(vidobj,F);
+    end
     
 end
 
 % close movie file
 close(hFig)
-close(vidobj);
+if NEWVER
+    close(vidobj);
+else
+    vidobj = close(vidobj);
+end
+
+
+function res = checkVersion
+% checks whether version is older than 2010b and contains VideoWriter
+
+rel = version('-release');
+year = str2num(rel(1:4));
+ver = rel(5);
+
+if year > 2010
+    res = true;
+elseif year == 2010 & strcmp(ver,'b')
+    res = true;
+else
+    res = false;
+end

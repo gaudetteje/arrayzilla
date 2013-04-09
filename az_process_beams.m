@@ -36,7 +36,7 @@ PLOT5 = 0;          % 3D beam surface/contour plot for each call
 LOCMODE = false;    % localize sound source using TDOA, if true
 FILTMODE = false;   % apply time-frequency filtering of each harmonic, if true
 EQMODE = false;     % apply microphone calibration equalizer, if true
-TLMODE = false;     % apply transmission loss correction, if true
+TLMODE = true;     % apply transmission loss correction, if true
 
 switch nargin
     case 3
