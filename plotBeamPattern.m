@@ -46,9 +46,8 @@ smSIZE = 1;         % kernel size for smooth3.m (set to 1 for disable)
 %TBD
 
 % surface plotting options
-%cMap = 'hot';     %jet;    % colormap
 dBrange = 35;           % colorscale depth
-zLim = [-100 -20];        % visual depth
+zLim = [-80 0];        % visual depth
 dBnorm = true;          % normalize to peak?
 azView = 17;            % azimuth angle
 elView = 54;            % elevation angle
@@ -406,6 +405,8 @@ if ~isempty(SRC)
     if iscell(SRC)
         warning('SRC was entered, but could not determine which index to use!')
     else
-        plot(SRC.az,SRC.el,'.')
+        hold on
+        %plot3(SRC.az,SRC.el,zLim(2)*ones(size(SRC.az)),'w.')
+        plot3(SRC.az,SRC.el,zLim(2)*ones(size(SRC.az)),'.','color',[.8 .8 .8])
     end
 end

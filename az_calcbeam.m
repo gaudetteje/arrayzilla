@@ -1,4 +1,4 @@
-function beam = az_calcbeam(fd,array,src,varargin)
+function beam = az_calcbeam(fd,src,array,varargin)
 % AZ_CALCBEAM  calculates and interpolates beams across frequency
 
 fprintf('\n***********************************************\n')
@@ -6,13 +6,9 @@ fprintf('Interpolating and smoothing beam pattern\n')
 
 % optional parameters
 DEBUG = 0;
-AXISMODE = 'ang';  %'pos'
 INTERPMODE = 'natural'; %'nearest','linear';
 if nargin > 3
-    AXISMODE = varargin{1};
-    if nargin > 4
-        INTERPMODE = varargin{2};
-    end
+    INTERPMODE = varargin{1};
 end
 
 
@@ -20,10 +16,9 @@ end
 %% hard coded parameters
 
 % frequency & grid spacing
-fRng = (19.5:1:100.5)*1e3;     % define frequency range bins
-%fRng = (12.5:5:102.5)*1e3;    % define frequency range bins
-azPts = 19*3;            % numebr of x grid points
-elPts = 12*3;            % number of y grid points
+fRng = (9.5:1:110.5)*1e3;      % define frequency range bins
+azPts = 19*5;                   % number of x grid points
+elPts = 12*5;                   % number of y grid points
 
 
 %% assign (az,el) data grid indices
