@@ -26,6 +26,7 @@ warning('OFF','CALC_SPECTRUM:dc');
 warning('OFF','AZ_CHANINDEX:badchannel');
 
 % plotting flags for debug
+PLOT1 = 0;          % plot array channel positions
 PLOT2 = 0;          % spectrogram for each raw call
 PLOT3 = 0;          % 3D representation of array and source location
 PLOT4 = 0;          % spectrogram for each filtered call
@@ -145,8 +146,8 @@ for eNum = 1:N
     fd(eNum) = az_analysis(ts);
 
     % Interpolate beam data
-    beam{eNum} = az_calcbeam(fd(eNum), source(eNum), array, 'nearest');
-    if PLOT5; plotBeamPattern(beam{eNum},60e3); pause; end
+    beam{eNum} = az_calcbeam(fd(eNum), array, source(eNum),'pos','nearest');%, 'pos', 'nearest');
+    if PLOT5; plotBeamPattern(beam{eNum},60e3,PLOTMODE); pause; end
     
     fprintf('\n\n**************************************\n')
     fprintf('*** Completed processing event %.3d ***\n',eNum)
