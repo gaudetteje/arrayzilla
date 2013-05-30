@@ -34,8 +34,8 @@ fprintf('\n***********************************************\n')
 % set default parameters
 BLOCKSIZE = 23666;              % process blocks of 100ms maximum
 
-gamma = 1e-2;                   % normalized threshold for amplitude detection
-nCh = 5;                        % number of channels required for threshold
+gamma = 1e4;                   % normalized threshold for amplitude detection
+%nCh = 5;                        % number of channels required for threshold
 nPad = 200;                     % number of samples to pad around detected calls
 DEBUG = false;
 
@@ -197,14 +197,14 @@ for eNum = 1:numel(event)
         ts.data = filtfilt(b,a,ts.data);
         ts.fs = hdr1.fs;
         
-        %% detect calls in data using energy
-        energy = abs(ts.data) * 2^-15;       % normalize abs val
-        [x,y] = find(energy > gamma);        % search for threshold crossings
-        energy = sparse(x,y,1);              % convert to sparse matrix
-        energy = sum(energy,2);                   % sum threshold crossings over all channels
-        eIdx = find(energy > nCh)';               % detect calls if 10 or more signals coincide
+        %% detect calls in data using instantaneous amplitude
+        energy = abs(hilbert(ts.data));         % approximate with the magnitude of the hilbert transform
+%        [x,y] = find(energy > gamma);           % search for threshold crossings
+%        energy = sparse(x,y,1);                 % convert to sparse matrix
+        energy = sum(energy,2);                 % sum energy over all channels
+        eIdx = find(energy > gamma)';             % detect signals above threshold
         
-        if DEBUG
+        if 1
             figure(1)
             plot(energy)
             title(sprintf('Block %d of %d',bNum,numel(block)))
@@ -259,9 +259,10 @@ for eNum = 1:numel(event)
     % remove last block if caused by noise
     if numel(call) && any(call(end).s1 >= E.s1)
         call(end) = [];
+        cNum = cNum - 1;
     end
     
-    fprintf('\n   Detected %d calls in event %d\n',numel(call),eNum)
+    %fprintf('   Detected %d calls in event %d\n', numel(c), eNum)
 
     % clear memory after each event is processed
     clear block
