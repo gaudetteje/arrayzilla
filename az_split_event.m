@@ -36,7 +36,7 @@ BLOCKSIZE = 23666;              % process blocks of 100ms maximum
 
 gamma = 1e4;                   % normalized threshold for amplitude detection
 %nCh = 5;                        % number of channels required for threshold
-nPad = 200;                     % number of samples to pad around detected calls
+nPad = 400;                     % number of samples to pad around detected calls
 DEBUG = false;
 
 % init parameters
@@ -204,7 +204,7 @@ for eNum = 1:numel(event)
         energy = sum(energy,2);                 % sum energy over all channels
         eIdx = find(energy > gamma)';             % detect signals above threshold
         
-        if 1
+        if DEBUG
             figure(1)
             plot(energy)
             title(sprintf('Block %d of %d',bNum,numel(block)))
@@ -237,8 +237,8 @@ for eNum = 1:numel(event)
             C.s1 = B.s0 + s1(c) - 1;
             
             % assign times using time from side 1
-            C.t0 = E.t0 + (C.s0(1) ./ ts.fs);
-            C.t1 = E.t0 + (C.s1(1) ./ ts.fs);
+            C.t0 = E.t0 + (s0(c) ./ ts.fs);
+            C.t1 = E.t0 + (s1(c) ./ ts.fs);
             
             % assign call/event number
             cNum = cNum + 1;
