@@ -147,7 +147,7 @@ for m = 1:numel(idx1)
 
         % combine beam video and audio with camera video
         disp(repmat('#',1,70))
-        fprinf('Combining video and audio into single AVI movie...\n')
+        fprintf('Combining video and audio into single AVI movie...\n')
         %TBD
 
         disp(repmat('#',1,70))

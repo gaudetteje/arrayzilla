@@ -34,8 +34,7 @@ fprintf('\n***********************************************\n')
 % set default parameters
 BLOCKSIZE = 23666;              % process blocks of 100ms maximum
 
-gamma = 1e4;                   % normalized threshold for amplitude detection
-%nCh = 5;                        % number of channels required for threshold
+gamma = 8500;                   % normalized threshold for amplitude detection
 nPad = 400;                     % number of samples to pad around detected calls
 DEBUG = false;
 
@@ -199,22 +198,8 @@ for eNum = 1:numel(event)
         
         %% detect calls in data using instantaneous amplitude
         energy = abs(hilbert(ts.data));         % approximate with the magnitude of the hilbert transform
-%        [x,y] = find(energy > gamma);           % search for threshold crossings
-%        energy = sparse(x,y,1);                 % convert to sparse matrix
         energy = sum(energy,2);                 % sum energy over all channels
         eIdx = find(energy > gamma)';             % detect signals above threshold
-        
-        if DEBUG
-            figure(1)
-            plot(energy)
-            title(sprintf('Block %d of %d',bNum,numel(block)))
-            drawnow
-            
-            figure(2)
-            plot(ts.data)
-            title('Timeseries data')
-            drawnow
-        end
         
         % if no detections found, continue to next block
         if isempty(eIdx)
@@ -228,6 +213,22 @@ for eNum = 1:numel(event)
         % ensure start/stop is within block indices
         s0 = unique(max(s0,1));
         s1 = unique(min(s1,BLOCKSIZE));
+        
+        if DEBUG
+            figure(1)
+            plot(energy)
+            hold on
+            plot([s0;s0],get(gca,'Ylim'),'--r')
+            plot([s1;s1],get(gca,'Ylim'),'--r')
+            hold off
+            title(sprintf('Event %d, Block %d',eNum,bNum))
+            drawnow
+            
+            figure(2)
+            plot(ts.data)
+            title('Timeseries data')
+            drawnow
+        end
         
         % append call struct with detected call(s)
         %[call(end+1:end+numel(s0))] = deal(struct('s0',[0 0],'s1',[0 0],'t0',[0 0],'t1',[0 0]));
@@ -262,8 +263,6 @@ for eNum = 1:numel(event)
         cNum = cNum - 1;
     end
     
-    %fprintf('   Detected %d calls in event %d\n', numel(c), eNum)
-
     % clear memory after each event is processed
     clear block
 end
