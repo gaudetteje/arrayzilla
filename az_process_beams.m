@@ -9,7 +9,7 @@ function varargout = az_process_beams(varargin)
 % az_process_beams(PREFIX,EVENT,ARRAY) uses the string PREFIX for
 %     specifying the pair of SRZ file names
 %
-% [BEAM,SOURCE,REF,ARRAY,FREQ] = az_process_beams(...) optionally returns
+% [BEAM,REF,SOURCE,ARRAY,FREQ] = az_process_beams(...) optionally returns
 %     the specified processing results
 %
 % [..] = az_process_beams(FNAME1,FNAME2,EVENT,ARRAY,BEAMFILE) writes beam data
@@ -26,6 +26,7 @@ warning('OFF','CALC_SPECTRUM:dc');
 warning('OFF','AZ_CHANINDEX:badchannel');
 
 % plotting flags for debug
+PLOT1 = 0;          % plot array channel positions
 PLOT2 = 0;          % spectrogram for each raw call
 PLOT3 = 0;          % 3D representation of array and source location
 PLOT4 = 0;          % spectrogram for each filtered call
@@ -71,7 +72,7 @@ end
 
 % assign beamfile name if not specified
 if ~exist('beamfile','var')
-    beamfile = [prefix 'beam.mat'];
+    beamfile = [prefix '_beam.mat'];
 end
 
 % load data file, if it exists
@@ -105,6 +106,9 @@ beam = cell(N,1);
 [ref(1:N).ch] = deal([]);
 [ref(1:N).data] = deal([]);
 [ref(1:N).fs] = deal([]);
+
+[ref(1:N).mra] = deal([]);
+
 [ref(1:N).done] = deal(false);
 [ref(1:N).error] = deal([]);
 
@@ -137,16 +141,16 @@ for eNum = 1:N
         warning('AZ_PROCESS_BEAMS:tlmode','Bypassed transmission loss correction')
     end
     if PLOT4; plotSpecArray(array,ts); end
-
-    % estimate bulk parameters
-    ref(eNum) = az_estimate_params(ts,event(eNum));
-
+    
     % Analyze frequency-content of each channel
     fd(eNum) = az_analysis(ts);
 
     % Interpolate beam data
-    beam{eNum} = az_calcbeam(fd(eNum), source(eNum), array, 'nearest');
-    if PLOT5; plotBeamPattern(beam{eNum},60e3); pause; end
+    beam{eNum} = az_calcbeam(fd(eNum), source(eNum), array, 'natural');
+    if PLOT5; plotBeamPattern(beam{eNum},60e3,PLOTMODE); pause; end
+    
+    % estimate bulk parameters
+    ref(eNum) = az_estimate_params(ts,fd(eNum),beam{eNum},event(eNum));
     
     fprintf('\n\n**************************************\n')
     fprintf('*** Completed processing event %.3d ***\n',eNum)

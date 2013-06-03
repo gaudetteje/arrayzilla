@@ -70,6 +70,8 @@ for m = 1:numel(idx1)
             fprintf('Verifying and realigning SRZ data files\n')
             az_align_data(fname1,'auto');
             az_align_data(fname2,'auto');
+        else
+            fprintf('Event struct found; Bypassing SRZ file realignment...\n')
         end
         
         %% load array structure, if exists, otherwise create it
