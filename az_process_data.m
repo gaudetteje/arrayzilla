@@ -41,6 +41,8 @@ end
 
 %% iterate over each pair of files (side 1 and 2)
 for m = 1:numel(idx1)
+    close all
+    
     try
         tic
         
@@ -64,7 +66,7 @@ for m = 1:numel(idx1)
         
         %% validate and realign data files as necessary
         disp(repmat('#',1,70))
-        if isempty(findfiles('.','event\.mat$'))
+        if isempty(findfiles(pname,'event\.mat$'))
             fprintf('Verifying and realigning SRZ data files\n')
             az_align_data(fname1,'auto');
             az_align_data(fname2,'auto');
@@ -145,7 +147,7 @@ for m = 1:numel(idx1)
 
         % combine beam video and audio with camera video
         disp(repmat('#',1,70))
-        fprinf('Combining video and audio into single AVI movie...\n')
+        fprintf('Combining video and audio into single AVI movie...\n')
         %TBD
 
         disp(repmat('#',1,70))
