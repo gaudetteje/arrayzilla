@@ -8,17 +8,12 @@ function calibrate_sensors(varargin)
 % calibrate_sensors(fname1,fname2,calfile,CH) updates the calibration data
 % in calfile only for channels in the array CH.
 
-FORCEDET = false;
-
-fname1 = '/Users/jasongaudette/Documents/MATLAB/arrayzilla/calibration_data/20111104_calibration/caldata_side1.srz';
-fname2 = '/Users/jasongaudette/Documents/MATLAB/arrayzilla/calibration_data/20111104_calibration/caldata_side2.srz';
-calfile = '/Users/jasongaudette/Documents/MATLAB/arrayzilla/calibration_data/20111104_calibration/caldata_bk1.bin';
+fname1 = '/Users/jasongaudette/Documents/MATLAB/arrayzilla/arrayzilla_data/calibration_data/20130617_arraycal/arraycal_row1_side1.srz';
+fname1 = '/Users/jasongaudette/Documents/MATLAB/arrayzilla/arrayzilla_data/calibration_data/20130617_arraycal/arraycal_row1_side2.srz';
+calfile = '/Users/jasongaudette/Documents/MATLAB/arrayzilla/arrayzilla_data/calibration_data/20130617_arraycal/06_17_13_bk_test.bin';
 
 if ~exist('TDOA_frame','file')
     addpath('~/src/simmons_svn/flightroom_tools/primary_analysis/');
-end
-if ~exist('read_arraybin','file')
-    addpath('~/src/simmons_svn/FieldArrayTracker/');
 end
 
 % % prompt for filename if not entered
@@ -58,28 +53,11 @@ end
 
 %%%%%%%%%%%%%%%%
 
-% identify known bad cal trials
-%TBD
-
 
 % load reference signal from B&K mic (relative to input @ microphone)
-ref.data = read_arraybin(calfile,50)';
-ref.avg = sum(ref.data,2);
-ref.avg = ref.avg - mean(ref.avg);
+ref.data = niLoadBin(calfile,2);        % ch1 = input; ch2 = b&k
+ref.data = ref.data - repmat(mean(ref.data),size(ref.data,1),1);
 ref.fs = 5e5;
-
-ref.env = abs(hilbert(ref.avg));
-ref.s0 = max(find(ref.env > .1*max(ref.env), 1, 'first') - 100, 0);
-ref.s1 = find(ref.env > .1*max(ref.env), 1, 'last') + 100;
-
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%% Define physical array parameters
-array = az_positions([19 12],[4 5]*.0254,[9/8 9/10]);
-
-% assign channel/board mapping to array struct
-array = az_channelmap(array);
-
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Detect calls in data files and return timestamps
