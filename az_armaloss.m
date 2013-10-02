@@ -1,7 +1,7 @@
 function ts = az_armaloss(ts, range)
 % AZ_ARMALOSS  correct for transmission losses re 1m
 
-PLOTFLAG = false;
+PLOTFLAG = true;
 
 Nch = size(ts.data,2);
 
@@ -37,8 +37,8 @@ TL = [TL; flipud(TL(2:end-1,:))];      % mirror full spectrum (removing point at
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% iterate over each channel
-B = zeros(Nb+1,Nch);
-A = zeros(Na+1,Nch);
+%B = zeros(Nb+1,Nch);
+%A = zeros(Na+1,Nch);
 
 fprintf('\n***********************************************\n')
 fprintf('Inverting transmission losses on channel    ')
