@@ -10,8 +10,10 @@ function ts = az_convert(fname1,fname2,call,array)
 % 'data' is an MxN matrix with M samples across N channels.  'fs' is a
 % scalar value holding the data sampling rate.
 %
-% Note:  CALLMAP is generated using az_detect_events and ARRAY is generated
-% using az_positions and az_channelmap.
+% Note:  EVENT is generated using az_detect_events and ARRAY is generated
+% using az_positions and az_channelmap.  The call structure from
+% az_split_event may be substituted for EVENT since it has identical
+% fields.
 
 fprintf('\n***********************************************\n')
 

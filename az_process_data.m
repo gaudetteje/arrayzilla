@@ -41,18 +41,25 @@ end
 
 %% iterate over each pair of files (side 1 and 2)
 for m = 1:numel(idx1)
+    close all
+    
     try
         tic
         
-        % find prefix of filename
+        % find prefix and filenames
         [pname, fname, ext] = fileparts(fnames{idx1(m)});
         sLoc = regexpi(fname,'\_');
-        prefix = fname(1:sLoc(end)-1);
-
-        % verify side2 exists
-        fname1 = fullfile(pname, [prefix '_side1' ext]);
-        fname2 = fullfile(pname, [prefix '_side2' ext]);
+        if isempty(sLoc)
+            prefix = '';
+            fname1 = fullfile(pname, ['side1' ext]);
+            fname2 = fullfile(pname, ['side2' ext]);
+        else
+            prefix = fname(1:sLoc(end)-1);
+            fname1 = fullfile(pname, [prefix '_side1' ext]);
+            fname2 = fullfile(pname, [prefix '_side2' ext]);
+        end
         
+        % verify side2 exists
         disp(repmat('#',1,70))
         fprintf('Processing data files with prefix "%s":\n\t%s\t%s\n\n',prefix,fname1,fname2)
 
@@ -64,7 +71,7 @@ for m = 1:numel(idx1)
         
         %% validate and realign data files as necessary
         disp(repmat('#',1,70))
-        if isempty(findfiles('.','event\.mat$'))
+        if isempty(findfiles(pname,'event\.mat$'))
             fprintf('Verifying and realigning SRZ data files\n')
             az_align_data(fname1,'auto');
             az_align_data(fname2,'auto');

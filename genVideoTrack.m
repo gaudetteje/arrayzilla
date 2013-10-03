@@ -131,8 +131,8 @@ ver = rel(5);
 
 if year > 2010
     res = true;
-elseif year == 2010 & strcmp(ver,'b')
-    res = true;
+% elseif year == 2010 & strcmp(ver,'b')
+%     res = true;
 else
     res = false;
 end
