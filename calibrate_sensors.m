@@ -8,13 +8,133 @@ function calibrate_sensors(varargin)
 % calibrate_sensors(fname1,fname2,calfile,CH) updates the calibration data
 % in calfile only for channels in the array CH.
 
-fname1 = '/Users/jasongaudette/Documents/MATLAB/arrayzilla/arrayzilla_data/calibration_data/20130617_arraycal/arraycal_row1_side1.srz';
-fname1 = '/Users/jasongaudette/Documents/MATLAB/arrayzilla/arrayzilla_data/calibration_data/20130617_arraycal/arraycal_row1_side2.srz';
-calfile = '/Users/jasongaudette/Documents/MATLAB/arrayzilla/arrayzilla_data/calibration_data/20130617_arraycal/06_17_13_bk_test.bin';
+% start logging text session
+logname = [datestr(now,'yyyymmdd_HHMM') '_log.txt'];
+diary(logname)
+disp(repmat('#',1,70))
+fprintf('Started processing calibration files now:  %s\n',datestr(now))
 
-if ~exist('TDOA_frame','file')
-    addpath('~/src/simmons_svn/flightroom_tools/primary_analysis/');
+
+DEBUG = false;
+
+
+%% prompt user for working directory
+if ~nargin
+    wDir = uigetdir('Select a data directory');
+else
+    wDir = varargin{1};
 end
+
+% search directory for srz files
+fnames = findfiles(wDir,'\.srz$');
+
+% find which files are side1 by name
+res = strfind(fnames,'side1.srz');
+idx1 = find(~cellfun(@isempty,res));
+
+if isempty(idx1)
+    fprintf('No data files found.  Aborting...\n\n')
+end
+
+
+
+%% iterate over each pair of files (side 1 and 2)
+for m = 1:numel(idx1)
+    close all
+    
+    try
+        tic
+        
+        % find prefix and filenames
+        [pname, fname, ext] = fileparts(fnames{idx1(m)});
+        sLoc = regexpi(fname,'\_');
+        if isempty(sLoc)
+            prefix = '';
+            fname1 = fullfile(pname, ['side1' ext]);
+            fname2 = fullfile(pname, ['side2' ext]);
+        else
+            prefix = fname(1:sLoc(end)-1);
+            fname1 = fullfile(pname, [prefix '_side1' ext]);
+            fname2 = fullfile(pname, [prefix '_side2' ext]);
+        end
+        
+        % verify side2 exists
+        disp(repmat('#',1,70))
+        fprintf('Processing data files with prefix "%s":\n\t%s\t%s\n\n',prefix,fname1,fname2)
+
+        if ~existfile(fname2)
+            warning('AZ_CALIBRATE_SENSORS:File Not Found','No matching side2 found for "%s" in "%s"\n  *** Skipping file ***',fullfile(fname,ext),pname)
+            continue
+        end
+        
+        %% validate and realign data files as necessary
+        disp(repmat('#',1,70))
+        if isempty(findfiles(pname,'event\.mat$'))
+            fprintf('Verifying and realigning SRZ data files\n')
+            az_align_data(fname1,'auto');
+            az_align_data(fname2,'auto');
+        else
+            fprintf('Event struct found; Bypassing SRZ file realignment...\n')
+        end
+        
+        %% load array structure, if exists, otherwise create it
+        disp(repmat('#',1,70))
+        arrayfile = fullfile(pname, [prefix '_array.mat']);
+        if existfile(arrayfile)
+            fprintf('Loading precomputed array definition...\n')
+            load(arrayfile,'array')
+        else
+            fprintf('Defining array structure\n')
+            array = az_define_array(arrayfile);
+        end
+        
+        
+        %% load event map, if exists, otherwise create it
+        disp(repmat('#',1,70))
+        eventfile = fullfile(pname, [prefix '_event.mat']);
+        hdrfile = fullfile(pname, [prefix '_hdr.mat']);
+        if ~existfile(eventfile)
+            fprintf('Detecting events...\n')
+            event = az_detect_events(fname1,fname2,eventfile,hdrfile);
+        end
+
+        callfile = fullfile(pname, [prefix '_call.mat']);
+        if existfile(callfile)
+            fprintf('Loading precomputed call structure...\n')
+            load(callfile,'call');
+        else
+            fprintf('Loading precomputed event structure...\n')
+            load(eventfile,'event');
+            fprintf('Call map not found.  Parsing data now...')
+            call = az_split_event(fname1,fname2,event,array,callfile);
+        end
+        
+        % show time series for each event
+        if DEBUG
+            fprintf('Plotting time series of all calls\n')
+            plotTimeSeries(fname1,fname2,call)
+            drawnow
+        end
+
+        % call function to convert data to time series, FFT, generate ARMA
+        % model
+        %  inputs:  fname1,fname2,events,array
+        %  output:   B,A % filter coeffs
+    
+    catch ME
+        % bail out and continue with next event
+        warning('Could not process files!')
+        disp(getReport(ME))
+        toc
+        continue
+    end
+end
+return        
+
+
+%if ~exist('TDOA_frame','file')
+%    addpath('~/src/simmons_svn/flightroom_tools/primary_analysis/');
+%end
 
 % % prompt for filename if not entered
 % switch nargin
