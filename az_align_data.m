@@ -210,7 +210,12 @@ while ~feof(fid)
                     % if 'Form' never found, just delete data
                     if ~exist('dstloc','var')
                         fprintf('No valid data found after 0x%x\n',idx)
-                        key = input(sprintf('Delete the last %u bytes remaining in the file? [y/N]:  ',fstats.bytes-idx),'s');
+                        if strcmpi(OPTIONS,'auto')
+                            key = 'y';      % Fix if problem found at less than 99.9% of file size
+                        else
+                            key = input(sprintf('Delete the last %u bytes remaining in the file? [y/N]:  ',fstats.bytes-idx),'s');
+                        end
+                        
                         if isempty(key); key = 'n'; end
                         if strcmpi(key(1),'y')
                             java.io.RandomAccessFile(fname,'rw').setLength(idx);
