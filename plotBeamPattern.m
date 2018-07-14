@@ -53,14 +53,14 @@ azView = 17;            % azimuth angle
 elView = 54;            % elevation angle
 
 % contour plotting options
-contourLev = -3;        % dB contour level for each frequency line [dB]
-colors = {'k','b','g','m','c','r'};
+contourLev = -6;        % dB contour level for each frequency line [dB]
+colorOrder = {'k','b','g','m','c','r'};
 
 
 %% optional parameters
 FREQ = [];
 SRC = [];
-PLOTMODE = 'surf'; %'cont'
+PLOTMODE = 'surf'; %'cont'; %
 DATAMODE = 'fft'; %'hsa1'; %
 FH = nan;
 switch (nargin)
@@ -334,7 +334,7 @@ switch PLOTMODE
         for i = fIdx
             dBpeak = max(max(B.Z(:,:,i)));
             fprintf('Peak @ %g kHz = %2.1f dB\n', B.f(i)*1e-3, dBpeak)
-            contour(B.AZ, B.EL, B.Z(:,:,i),dBpeak+dBlevels,colors{mod(i-1,length(colors))+1},'linewidth',2);
+            contour(B.AZ, B.EL, B.Z(:,:,i),dBpeak+dBlevels,colorOrder{mod(i-1,length(colorOrder))+1},'linewidth',2);
         end
         grid on;
         legend(num2str(1e-3*B.f(fIdx)'))
@@ -356,7 +356,7 @@ switch PLOTMODE
             if dBnorm, zMod = dBpeak; else, zMod = 0; end
             
             plot(B.az, B.Z(k,:,i) - zMod, ...
-                colors{mod(i-1,length(colors))+1}, ...
+                colorOrder{mod(i-1,length(colorOrder))+1}, ...
                 'linewidth',2)
         end
         grid on;
@@ -383,7 +383,7 @@ switch PLOTMODE
             if dBnorm, zMod = dBpeak; else, zMod = 0; end
             
             plot(B.el, B.Z(:,k,i) - zMod, ...
-                colors{mod(i-1,length(colors))+1}, ...
+                colorOrder{mod(i-1,length(colorOrder))+1}, ...
                 'linewidth',2)
         end
         grid on;

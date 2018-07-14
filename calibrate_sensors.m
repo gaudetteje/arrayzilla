@@ -67,16 +67,6 @@ for m = 1:numel(idx1)
             continue
         end
         
-        %% validate and realign data files as necessary
-        disp(repmat('#',1,70))
-        if isempty(findfiles(pname,'event\.mat$'))
-            fprintf('Verifying and realigning SRZ data files\n')
-            az_align_data(fname1,'auto');
-            az_align_data(fname2,'auto');
-        else
-            fprintf('Event struct found; Bypassing SRZ file realignment...\n')
-        end
-        
         %% load array structure, if exists, otherwise create it
         disp(repmat('#',1,70))
         arrayfile = fullfile(pname, [prefix '_array.mat']);
@@ -88,6 +78,15 @@ for m = 1:numel(idx1)
             array = az_define_array(arrayfile);
         end
         
+        %% validate and realign data files as necessary
+        disp(repmat('#',1,70))
+        if isempty(findfiles(pname,'event\.mat$'))
+            fprintf('Verifying and realigning SRZ data files\n')
+            az_align_data(fname1,'auto');
+            az_align_data(fname2,'auto');
+        else
+            fprintf('Event struct found; Bypassing SRZ file realignment...\n')
+        end
         
         %% load event map, if exists, otherwise create it
         disp(repmat('#',1,70))
@@ -97,7 +96,7 @@ for m = 1:numel(idx1)
             fprintf('Detecting events...\n')
             event = az_detect_events(fname1,fname2,eventfile,hdrfile);
         end
-
+        
         callfile = fullfile(pname, [prefix '_call.mat']);
         if existfile(callfile)
             fprintf('Loading precomputed call structure...\n')
@@ -115,7 +114,7 @@ for m = 1:numel(idx1)
             plotTimeSeries(fname1,fname2,call)
             drawnow
         end
-
+        
         % call function to convert data to time series, FFT, generate ARMA
         % model
         %  inputs:  fname1,fname2,events,array

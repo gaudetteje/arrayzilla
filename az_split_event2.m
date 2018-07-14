@@ -34,8 +34,9 @@ fprintf('\n***********************************************\n')
 % set default parameters
 BLOCKSIZE = 23666;              % process blocks of 100ms maximum
 
-gamma = 8500;                   % normalized threshold for amplitude detection
-nPad = 400;                     % number of samples to pad around detected calls
+gamma = 1e-2;                   % normalized threshold for amplitude detection
+nCh = 5;                        % number of channels required for threshold
+nPad = 200;                     % number of samples to pad around detected calls
 DEBUG = false;
 
 % init parameters
@@ -196,10 +197,24 @@ for eNum = 1:numel(event)
         ts.data = filtfilt(b,a,ts.data);
         ts.fs = hdr1.fs;
         
-        %% detect calls in data using instantaneous amplitude
-        energy = abs(hilbert(ts.data));         % approximate with the magnitude of the hilbert transform
-        energy = sum(energy,2);                 % sum energy over all channels
-        eIdx = find(energy > gamma)';             % detect signals above threshold
+        %% detect calls in data using energy
+        energy = abs(ts.data) * 2^-15;       % normalize abs val
+        [x,y] = find(energy > gamma);        % search for threshold crossings
+        energy = sparse(x,y,1);              % convert to sparse matrix
+        energy = sum(energy,2);                   % sum threshold crossings over all channels
+        eIdx = find(energy > nCh);               % detect calls if 10 or more signals coincide
+        
+        if DEBUG
+            figure(1)
+            plot(energy)
+            title(sprintf('Block %d of %d',bNum,numel(block)))
+            drawnow
+            
+            figure(2)
+            plot(ts.data)
+            title('Timeseries data')
+            drawnow
+        end
         
         % if no detections found, continue to next block
         if isempty(eIdx)
@@ -214,22 +229,6 @@ for eNum = 1:numel(event)
         s0 = unique(max(s0,1));
         s1 = unique(min(s1,BLOCKSIZE));
         
-        if DEBUG
-            figure(1)
-            plot(energy)
-            hold on
-            plot([s0;s0],get(gca,'Ylim'),'--r')
-            plot([s1;s1],get(gca,'Ylim'),'--r')
-            hold off
-            title(sprintf('Event %d, Block %d',eNum,bNum))
-            drawnow
-            
-            figure(2)
-            plot(ts.data)
-            title('Timeseries data')
-            drawnow
-        end
-        
         % append call struct with detected call(s)
         %[call(end+1:end+numel(s0))] = deal(struct('s0',[0 0],'s1',[0 0],'t0',[0 0],'t1',[0 0]));
         for c=1:numel(s0)
@@ -238,8 +237,8 @@ for eNum = 1:numel(event)
             C.s1 = B.s0 + s1(c) - 1;
             
             % assign times using time from side 1
-            C.t0 = E.t0 + (s0(c) ./ ts.fs);
-            C.t1 = E.t0 + (s1(c) ./ ts.fs);
+            C.t0 = E.t0 + (C.s0(1) ./ ts.fs);
+            C.t1 = E.t0 + (C.s1(1) ./ ts.fs);
             
             % assign call/event number
             cNum = cNum + 1;
@@ -260,9 +259,10 @@ for eNum = 1:numel(event)
     % remove last block if caused by noise
     if numel(call) && any(call(end).s1 >= E.s1)
         call(end) = [];
-        cNum = cNum - 1;
     end
     
+    fprintf('\n   Detected %d calls in event %d\n',numel(call),eNum)
+
     % clear memory after each event is processed
     clear block
 end
